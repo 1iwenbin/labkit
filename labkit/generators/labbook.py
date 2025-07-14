@@ -2,45 +2,49 @@
 Labbook experiment generator
 """
 
-import os
-import yaml
+from ruamel.yaml import YAML
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Optional
 from ..models.labbook import Labbook
-from ..models.capabilities import Event, Query, Monitor
 
 
 class LabbookGenerator:
     """Generator for creating Labbook experiment directories with YAML formatting and comments"""
-    
-    def __init__(self, output_dir: str = ".", pretty_format: bool = True, add_comments: bool = True):
+
+    def __init__(
+        self, output_dir: str = ".", pretty_format: bool = True, add_comments: bool = True
+    ):
         self.output_dir = Path(output_dir)
         self.pretty_format = pretty_format
         self.add_comments = add_comments
-    
+        self.yaml = YAML()
+        if pretty_format:
+            self.yaml.indent(mapping=2, sequence=4, offset=2)
+            self.yaml.width = 80
+
     def generate(self, labbook: Labbook, experiment_name: Optional[str] = None) -> Path:
         """Generate a complete Labbook experiment directory"""
         if experiment_name is None:
             experiment_name = labbook.name
-        
+
         # Create experiment directory
         experiment_dir = self.output_dir / experiment_name
         experiment_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Generate labbook.yaml
         self._generate_labbook_yaml(experiment_dir, labbook)
-        
+
         # Generate network topology
         self._generate_network_topology(experiment_dir, labbook.topology)
-        
+
         # Generate playbook
         self._generate_playbook(experiment_dir, labbook.playbook)
-        
+
         # Generate capability files
         self._generate_capabilities(experiment_dir, labbook.playbook)
-        
+
         return experiment_dir
-    
+
     def _generate_labbook_yaml(self, experiment_dir: Path, labbook: Labbook):
         """Generate labbook.yaml file with optional comments and formatting"""
         # Add header comment if enabled
@@ -53,46 +57,35 @@ class LabbookGenerator:
 # Created: {labbook.created_at or 'Unknown'}
 
 """
-        
+
         labbook_data = {
             "name": labbook.name,
             "description": labbook.description,
             "version": labbook.version,
         }
-        
+
         if labbook.author:
             labbook_data["author"] = labbook.author
         if labbook.created_at:
             labbook_data["created_at"] = labbook.created_at
-        
+
         labbook_file = experiment_dir / "labbook.yaml"
-        with open(labbook_file, 'w', encoding='utf-8') as f:
+        with open(labbook_file, "w", encoding="utf-8") as f:
             if header_comment:
                 f.write(header_comment)
-            
-            # Use custom YAML dumper for pretty formatting
-            if self.pretty_format:
-                yaml.dump(
-                    labbook_data, 
-                    f, 
-                    default_flow_style=False, 
-                    allow_unicode=True,
-                    sort_keys=False,  # Preserve order
-                    indent=2,
-                    width=80
-                )
-            else:
-                yaml.dump(labbook_data, f, default_flow_style=False, allow_unicode=True)
-    
+
+            # Use ruamel.yaml for dumping
+            self.yaml.dump(labbook_data, f)
+
     def _generate_network_topology(self, experiment_dir: Path, topology):
         """Generate network topology files with comments and formatting"""
         network_dir = experiment_dir / "network"
         network_dir.mkdir(exist_ok=True)
-        
+
         # Add header comment if enabled
         header_comment = ""
         if self.add_comments:
-            header_comment = f"""# Network Topology Configuration
+            header_comment = """# Network Topology Configuration
 # This file defines the static network environment for the experiment
 # - images: Docker image sources for nodes
 # - nodes: Compute nodes with network interfaces
@@ -100,56 +93,49 @@ class LabbookGenerator:
 # - links: Logical communication paths between nodes
 
 """
-        
+
         # Generate topology.yaml
         topology_data = {
-            "images": {name: source.dict(exclude_none=True) for name, source in topology.images.items()},
+            "images": {
+                name: source.dict(exclude_none=True) for name, source in topology.images.items()
+            },
             "nodes": [node.dict(exclude_none=True) for node in topology.nodes],
             "switches": [switch.dict(exclude_none=True) for switch in topology.switches],
-            "links": [link.dict(exclude_none=True) for link in topology.links]
+            "links": [link.dict(exclude_none=True) for link in topology.links],
         }
-        
+
         topology_file = network_dir / "topology.yaml"
-        with open(topology_file, 'w', encoding='utf-8') as f:
+        with open(topology_file, "w", encoding="utf-8") as f:
             if header_comment:
                 f.write(header_comment)
-            
-            # Use custom YAML dumper for pretty formatting
-            if self.pretty_format:
-                yaml.dump(
-                    topology_data, 
-                    f, 
-                    default_flow_style=False, 
-                    allow_unicode=True,
-                    sort_keys=False,
-                    indent=2,
-                    width=80
-                )
-            else:
-                yaml.dump(topology_data, f, default_flow_style=False, allow_unicode=True)
-        
+
+            # Use ruamel.yaml for dumping
+            self.yaml.dump(topology_data, f)
+
         # Create mounts directory
         mounts_dir = network_dir / "mounts"
         mounts_dir.mkdir(exist_ok=True)
-    
+
     def _generate_playbook(self, experiment_dir: Path, playbook):
         """Generate playbook.yaml file"""
         playbook_data = {}
-        
+
         if playbook.conditions:
-            playbook_data["conditions"] = [cond.dict(exclude_none=True) for cond in playbook.conditions]
-        
+            playbook_data["conditions"] = [
+                cond.dict(exclude_none=True) for cond in playbook.conditions
+            ]
+
         if playbook.timeline:
             playbook_data["timeline"] = {
                 "steps": [step.dict(exclude_none=True) for step in playbook.timeline.steps]
             }
-        
+
         playbook_data["procedures"] = [proc.dict(exclude_none=True) for proc in playbook.procedures]
-        
+
         playbook_file = experiment_dir / "playbook.yaml"
-        with open(playbook_file, 'w', encoding='utf-8') as f:
-            yaml.dump(playbook_data, f, default_flow_style=False, allow_unicode=True)
-    
+        with open(playbook_file, "w", encoding="utf-8") as f:
+            self.yaml.dump(playbook_data, f)
+
     def _generate_capabilities(self, experiment_dir: Path, playbook):
         """Generate capability definition files"""
         # This would need to be implemented based on how capabilities are defined
@@ -157,7 +143,7 @@ class LabbookGenerator:
         for capability_type in ["events", "queries", "monitors"]:
             capability_dir = experiment_dir / capability_type
             capability_dir.mkdir(exist_ok=True)
-        
+
         # Create scripts directory
         scripts_dir = experiment_dir / "scripts"
-        scripts_dir.mkdir(exist_ok=True) 
+        scripts_dir.mkdir(exist_ok=True)

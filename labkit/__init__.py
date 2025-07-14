@@ -14,7 +14,7 @@ from .generators.labbook import LabbookGenerator
 __version__ = "0.1.0"
 __all__ = [
     "Labbook",
-    "Topology", 
+    "Topology",
     "Node",
     "Interface",
     "Switch",
@@ -23,7 +23,7 @@ __all__ = [
     "InterfaceMode",
     "Playbook",
     "Timeline",
-    "Procedure", 
+    "Procedure",
     "Condition",
     "Step",
     "Action",
@@ -33,5 +33,5 @@ __all__ = [
     "Monitor",
     "CapabilityType",
     "AssertionRule",
-    "LabbookGenerator"
-] 
+    "LabbookGenerator",
+]
