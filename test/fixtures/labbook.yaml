@@ -1,0 +1,27 @@
+
+name: test-experiment
+description: A test experiment
+version: "1.0"
+author: Test User
+created_at: "2024-01-01T00:00:00Z"
+network:
+  images:
+    - type: registry
+      repo: library/ubuntu
+      tag: "20.04"
+  nodes:
+    - name: test-node
+      image: ubuntu:20.04
+      interfaces:
+        - name: eth0
+          mode: host
+          ip:
+            - "192.168.1.10/24"
+  switches: []
+  links: []
+playbook:
+  procedures:
+    - id: test-proc
+      trigger_at: "10s"
+      steps:
+        - description: Test step

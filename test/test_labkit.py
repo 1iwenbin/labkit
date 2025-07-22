@@ -11,9 +11,12 @@ from labkit.models.base import TIME_EXPR_REGEX
 # Add labkit to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'labkit'))
 
+# Add labkit to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 try:
     from labkit import (
-        Labbook, Topology, Node, Interface, Switch, Link, ImageSource,
+        Labbook, NetworkConfig, Node, Interface, L2Switch, Link, Image, ImageType,
         Playbook, Timeline, Procedure, Step, Action, Condition,
         InterfaceMode, ConditionType, LabbookGenerator
     )
@@ -25,38 +28,49 @@ except ImportError as e:
 def test_basic_models():
     """Test basic model creation"""
     try:
-        # Test ImageSource
-        image = ImageSource(registry="ubuntu:20.04")
-        print("✅ ImageSource created successfully")
+        # Test Image
+        image = Image(
+            type=ImageType.REGISTRY,
+            repo="library/ubuntu",
+            tag="20.04"
+        )
+        print("✅ Image created successfully")
         
         # Test Interface
-        interface = Interface(name="eth0", mode=InterfaceMode.HOST, ip="192.168.1.10")
+        interface = Interface(
+            name="eth0", 
+            mode=InterfaceMode.HOST, 
+            ip=["192.168.1.10/24"]
+        )
         print("✅ Interface created successfully")
         
         # Test Node
         node = Node(
-            id="test-node",
-            image="ubuntu",
+            name="test-node",
+            image="ubuntu:20.04",
             interfaces=[interface]
         )
         print("✅ Node created successfully")
         
-        # Test Switch
-        switch = Switch(id="test-switch", description="Test switch")
-        print("✅ Switch created successfully")
+        # Test L2Switch
+        switch = L2Switch(id="test-switch")
+        print("✅ L2Switch created successfully")
         
         # Test Link
-        link = Link(endpoints=["test-node", "test-node"], switch="test-switch")
+        link = Link(
+            id="test-link",
+            endpoints=["test-node:eth0", "test-node:eth1"]
+        )
         print("✅ Link created successfully")
         
-        # Test Topology
-        topology = Topology(
-            images={"ubuntu": image},
+        # Test NetworkConfig
+        network_config = NetworkConfig(
+            images=[image],
             nodes=[node],
             switches=[switch],
             links=[link]
         )
-        print("✅ Topology created successfully")
+        print("✅ NetworkConfig created successfully")
         
         return True
         
@@ -136,14 +150,26 @@ def test_time_expressions():
 def test_labbook_creation():
     """Test complete labbook creation"""
     try:
-        # Create minimal topology
-        topology = Topology(
-            images={"ubuntu": ImageSource(registry="ubuntu:20.04")},
+        # Create minimal network config
+        network_config = NetworkConfig(
+            images=[
+                Image(
+                    type=ImageType.REGISTRY,
+                    repo="library/ubuntu",
+                    tag="20.04"
+                )
+            ],
             nodes=[
                 Node(
-                    id="test-node",
-                    image="ubuntu",
-                    interfaces=[Interface(name="eth0", mode=InterfaceMode.HOST)]
+                    name="test-node",
+                    image="ubuntu:20.04",
+                    interfaces=[
+                        Interface(
+                            name="eth0", 
+                            mode=InterfaceMode.HOST,
+                            ip=["192.168.1.10/24"]
+                        )
+                    ]
                 )
             ],
             switches=[],
@@ -165,7 +191,7 @@ def test_labbook_creation():
         labbook = Labbook(
             name="test-experiment",
             description="Test experiment",
-            topology=topology,
+            network=network_config,
             playbook=playbook
         )
         

@@ -1,37 +1,53 @@
 """
-Labkit - Python SDK for Labbook experiment specification
+Labkit - Python SDK for Labbook Experiments
 
-This package provides a Python SDK for creating and managing Labbook experiments.
-It implements the three-layer architecture model with focus on usability and flexibility.
+This package provides a complete Python SDK for creating and managing
+Labbook network experiment specifications.
 """
 
-from .models.labbook import Labbook
-from .models.network import Topology, Node, Interface, Switch, Link, ImageSource, InterfaceMode
-from .models.playbook import Playbook, Timeline, Procedure, Condition, Step, Action, ConditionType
-from .models.capabilities import Event, Query, Monitor, CapabilityType, AssertionRule
-from .generators.labbook import LabbookGenerator
+from .models import *
+
+# Import validators
+from .validators import YAMLValidator, validate_yaml_file, validate_experiment
+
+# Import builders
+from .builders import (
+    NetworkBuilder, NodeBuilder, PlaybookBuilder, ProcedureBuilder, LabbookBuilder,
+    create_simple_network, create_labbook,
+    build_star_topology, build_linear_topology, build_mesh_topology,
+    save_experiment
+)
 
 __version__ = "0.1.0"
 __all__ = [
+    # Models
     "Labbook",
-    "Topology",
     "Node",
     "Interface",
-    "Switch",
     "Link",
-    "ImageSource",
     "InterfaceMode",
     "Playbook",
     "Timeline",
     "Procedure",
-    "Condition",
     "Step",
     "Action",
+    "Condition",
     "ConditionType",
-    "Event",
-    "Query",
-    "Monitor",
-    "CapabilityType",
-    "AssertionRule",
     "LabbookGenerator",
+    # Validators
+    "YAMLValidator",
+    "validate_yaml_file", 
+    "validate_experiment",
+    # Builders
+    "NetworkBuilder",
+    "NodeBuilder", 
+    "PlaybookBuilder",
+    "ProcedureBuilder",
+    "LabbookBuilder",
+    "create_simple_network",
+    "create_labbook",
+    "build_star_topology",
+    "build_linear_topology", 
+    "build_mesh_topology",
+    "save_experiment",
 ]

@@ -1,146 +1,77 @@
 """
-Network topology models for Labbook specification
+Network topology models for Labbook specification (aligned with Go version)
 """
 
-from typing import List, Dict, Optional, Union
+from typing import List, Optional, Dict, Any
 from enum import Enum
-from pydantic import Field, validator, model_validator
-from .base import BaseLabbookModel, ValidationError
-
+from pydantic import Field, ConfigDict
+from .base import BaseLabbookModel
 
 class InterfaceMode(str, Enum):
-    """Interface working modes"""
-
     DIRECT = "direct"
     SWITCHED = "switched"
     GATEWAY = "gateway"
     HOST = "host"
 
-
 class VolumeMount(BaseLabbookModel):
-    """Volume mount configuration"""
-
-    source: str = Field(..., description="Source path")
-    destination: str = Field(..., description="Destination path")
-    mode: str = Field(default="rw", description="Mount mode (rw, ro, etc.)")
-
+    host_path: str = Field(..., alias="host_path", description="Host path")
+    container_path: str = Field(..., alias="container_path", description="Container path")
+    mode: str = Field(..., alias="mode", description="Mount mode (rw, ro, etc.)")
 
 class Interface(BaseLabbookModel):
-    """Network interface definition"""
-
-    name: str = Field(..., description="Interface name")
-    mode: InterfaceMode = Field(..., description="Interface working mode")
-    ip: Optional[Union[str, List[str]]] = Field(None, description="IP address(es)")
-    gateway: Optional[str] = Field(None, description="Gateway interface (for host mode)")
-
-    @validator("gateway")
-    def validate_gateway(cls, v, values):
-        if v is not None and values.get("mode") != InterfaceMode.HOST:
-            raise ValueError("Gateway field is only valid for host mode interfaces")
-        return v
-
+    name: str = Field(..., alias="name", description="Interface name")
+    mode: InterfaceMode = Field(..., alias="mode", description="Interface working mode")
+    ip_list: Optional[List[str]] = Field(None, alias="ip", description="IP address list")
+    mac: Optional[str] = Field(None, alias="mac", description="MAC address")
+    vlan: Optional[int] = Field(None, alias="vlan", description="VLAN ID, non-zero means external interface")
 
 class Node(BaseLabbookModel):
-    """Compute node definition"""
+    name: str = Field(..., alias="name", description="Node name")
+    image: str = Field(..., alias="image", description="Container image")
+    interfaces: List[Interface] = Field(..., alias="interfaces", description="Network interfaces")
+    volumes: Optional[List[VolumeMount]] = Field(None, alias="volumes", description="Volume mounts")
+    ext: Optional[Dict[str, Any]] = Field(None, alias="ext", description="Extension config")
 
-    id: str = Field(..., description="Node identifier")
-    image: str = Field(..., description="Docker image to use")
-    interfaces: List[Interface] = Field(..., description="Network interfaces")
-    volumes: Optional[List[Union[str, VolumeMount]]] = Field(None, description="Volume mounts")
+class SwitchProperties(BaseLabbookModel):
+    static_neigh: Optional[bool] = Field(False, alias="static_neigh", description="Use static neighbor table")
+    no_arp: Optional[bool] = Field(False, alias="no_arp", description="Disable ARP")
 
-    @validator("volumes")
-    def validate_volumes(cls, v):
-        if v is None:
-            return v
-
-        validated_volumes = []
-        for volume in v:
-            if isinstance(volume, str):
-                # Parse Docker-style shorthand: "src:dest:mode"
-                parts = volume.split(":")
-                if len(parts) == 2:
-                    validated_volumes.append(VolumeMount(source=parts[0], destination=parts[1]))
-                elif len(parts) == 3:
-                    validated_volumes.append(
-                        VolumeMount(source=parts[0], destination=parts[1], mode=parts[2])
-                    )
-                else:
-                    raise ValueError(f"Invalid volume format: {volume}")
-            else:
-                validated_volumes.append(volume)
-
-        return validated_volumes
-
-
-class Switch(BaseLabbookModel):
-    """Virtual switch definition (L2 broadcast domain)"""
-
-    id: str = Field(..., description="Switch identifier")
-    description: Optional[str] = Field(None, description="Switch description")
-
+class L2Switch(BaseLabbookModel):
+    id: str = Field(..., alias="id", description="Switch ID")
+    properties: Optional[SwitchProperties] = Field(None, alias="properties", description="Switch properties")
 
 class Link(BaseLabbookModel):
-    """Logical communication path between nodes"""
+    id: str = Field(..., alias="id", description="Link ID")
+    endpoints: List[str] = Field(..., alias="endpoints", description="Endpoint list (format: node:interface)")
+    switch: Optional[str] = Field(None, alias="switch", description="Switch ID")
 
-    endpoints: List[str] = Field(..., description="Node interface endpoints")
-    switch: Optional[str] = Field(None, description="Associated switch for switched connections")
+class ImageType(str, Enum):
+    REGISTRY = "registry"
+    DOCKER_ARCHIVE = "docker-archive"
 
-    @validator("endpoints")
-    def validate_endpoints(cls, v):
-        if len(v) != 2:
-            raise ValueError("Link must have exactly 2 endpoints")
-        return v
+class Image(BaseLabbookModel):
+    type: ImageType = Field(..., alias="type", description="Image type")
+    repo: str = Field(..., alias="repo", description="Repository")
+    tag: str = Field(..., alias="tag", description="Tag")
+    url: Optional[str] = Field(None, alias="url", description="URL")
+    username: Optional[str] = Field(None, alias="username", description="Username")
+    password: Optional[str] = Field(None, alias="password", description="Password")
+    archive_path: Optional[str] = Field(None, alias="archive_path", description="Archive path")
 
-
-class ImageSource(BaseLabbookModel):
-    """Docker image source definition"""
-
-    registry: Optional[str] = Field(None, description="Registry URL")
-    tar: Optional[str] = Field(None, description="Local tar file path")
-
-    @validator("registry", "tar")
-    def validate_source(cls, v, values):
-        if v is None and not any(values.values()):
-            raise ValueError("Image source must specify either registry or tar")
-        return v
-
-
-class Topology(BaseLabbookModel):
-    """Network topology definition"""
-
-    images: Dict[str, ImageSource] = Field(..., description="Image source definitions")
-    nodes: List[Node] = Field(..., description="Compute nodes")
-    switches: List[Switch] = Field(..., description="Virtual switches")
-    links: List[Link] = Field(..., description="Logical links")
-
-    @model_validator(mode="after")
-    def validate_topology(self):
-        """Validate topology consistency"""
-        nodes = self.nodes
-        switches = self.switches
-        links = self.links
-
-        # Validate node IDs are unique
-        node_ids = [node.id for node in nodes]
-        if len(node_ids) != len(set(node_ids)):
-            raise ValidationError("Node IDs must be unique")
-
-        # Validate switch IDs are unique
-        switch_ids = [switch.id for switch in switches]
-        if len(switch_ids) != len(set(switch_ids)):
-            raise ValidationError("Switch IDs must be unique")
-
-        # Validate link endpoints reference valid nodes
-        for link in links:
-            for endpoint in link.endpoints:
-                if endpoint not in node_ids:
-                    raise ValidationError(
-                        f"Link endpoint '{endpoint}' references non-existent node"
-                    )
-
-        # Validate link switches reference valid switches
-        for link in links:
-            if link.switch and link.switch not in switch_ids:
-                raise ValidationError(f"Link switch '{link.switch}' references non-existent switch")
-
-        return self
+class NetworkConfig(BaseLabbookModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "properties": {
+                "images": {},
+                "nodes": {},
+                "switches": {},
+                "links": {}
+            },
+            "required": ["images", "nodes", "switches", "links"]
+        }
+    )
+    
+    images: Optional[List[Image]] = Field(None, alias="images", description="Image list")
+    nodes: Optional[List[Node]] = Field(None, alias="nodes", description="Node list")
+    switches: Optional[List[L2Switch]] = Field(None, alias="switches", description="Switch list")
+    links: Optional[List[Link]] = Field(None, alias="links", description="Link list")

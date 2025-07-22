@@ -5,7 +5,7 @@ Top-level Labbook model for experiment specification
 from typing import Optional
 from pydantic import Field
 from .base import BaseLabbookModel
-from .network import Topology
+from .network import NetworkConfig
 from .playbook import Playbook
 
 
@@ -19,5 +19,5 @@ class Labbook(BaseLabbookModel):
     created_at: Optional[str] = Field(None, description="Creation timestamp")
 
     # Core components
-    topology: Topology = Field(..., description="Network topology")
+    network: NetworkConfig = Field(..., description="Network configuration")
     playbook: Playbook = Field(..., description="Experiment playbook")

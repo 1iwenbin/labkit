@@ -1,0 +1,58 @@
+images:
+- type: registry
+  repo: library/ubuntu
+  tag: '22.04'
+  url: https://registry-1.docker.io
+  username: user
+  password: pass
+- type: docker-archive
+  repo: custom/image
+  tag: latest
+  archive_path: /images/custom-image.tar
+nodes:
+- name: node1
+  image: library/ubuntu:22.04
+  interfaces:
+  - name: eth0
+    mode: direct
+    ip:
+    - 10.0.0.2/24
+    mac: 00:11:22:33:44:55
+    vlan: 0
+  - name: eth1
+    mode: switched
+    ip:
+    - 192.168.1.2/24
+    mac: 00:11:22:33:44:66
+    vlan: 100
+  volumes:
+  - host_path: /data
+    container_path: /mnt/data
+    mode: rw
+  ext:
+    role: compute
+- name: node2
+  image: library/ubuntu:22.04
+  interfaces:
+  - name: eth0
+    mode: direct
+    ip:
+    - 10.0.0.3/24
+    mac: 00:11:22:33:44:77
+    vlan: 0
+  volumes: []
+switches:
+- id: sw1
+  properties:
+    static_neigh: true
+    no_arp: false
+links:
+- id: link1
+  endpoints:
+  - node1:eth0
+  - node2:eth0
+- id: link2
+  endpoints:
+  - node1:eth1
+  - node2:eth0
+  switch: sw1
