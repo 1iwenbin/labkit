@@ -85,3 +85,17 @@ class Labbook(BaseLabbookModel):
         """Get labbook version (apiVersion)"""
         return self.api_version
 
+
+    @classmethod
+    def template(cls, name: str, description: str = "", author: str = "", tags: List[str] = []) -> "Labbook":
+        """
+        Generate a template Labbook data structure with example fields.
+        """
+        return cls(
+            metadata={
+                "name": name,
+                "description": description,
+                "author": author,
+                "tags": tags
+            }
+        )

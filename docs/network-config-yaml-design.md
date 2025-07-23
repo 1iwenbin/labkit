@@ -1,6 +1,6 @@
-# `network/topology.yaml` 规范定义 v1.4 (最终版)
+# `network/config.yaml` 规范定义 v1.4 (最终版)
 
-**文档目的:** 本文档为 `Labbook` 规范的一部分，旨在精确定义 `network/topology.yaml` 文件的结构与字段。该文件是描述实验静态网络环境的核心。v1.4版本是经过深入讨论和反复迭代后的最终版本，它在保证功能强大的同时，追求极致的简洁、直观和逻辑严谨性。
+**文档目的:** 本文档为 `Labbook` 规范的一部分，旨在精确定义 `network/config.yaml` 文件的结构与字段。该文件是描述实验静态网络环境的核心。v1.4版本是经过深入讨论和反复迭代后的最终版本，它在保证功能强大的同时，追求极致的简洁、直观和逻辑严谨性。
 
 ## 1. 设计哲学
 
@@ -12,7 +12,7 @@
 
 ## 2. 文件结构
 
-`topology.yaml` 文件由四个可选的顶层字段组成：`images`, `nodes`, `switches`, 和 `links`。
+`config.yaml` 文件由四个可选的顶层字段组成：`images`, `nodes`, `switches`, 和 `links`。
 
 ```
 # 顶层结构
@@ -77,7 +77,7 @@ links:
 
 ## 4. 完整示例
 ```yaml
-# network/topology.yaml (v1.4 最终版)
+# network/config.yaml (v1.4 最终版)
 
 images:
   nginx_img: "nginx:1.21"

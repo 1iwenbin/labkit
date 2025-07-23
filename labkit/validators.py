@@ -228,14 +228,14 @@ class YAMLValidator:
         # Validate network configuration
         network_dir = experiment_dir / "network"
         if network_dir.exists():
-            network_config_file = network_dir / "topology.yaml"
+            network_config_file = network_dir / "config.yaml"
             if network_config_file.exists():
                 if not self.validate_network_config_yaml(network_config_file):
                     success = False
             else:
                 self.warnings.append({
                     "file": str(network_config_file),
-                    "warning": "network/topology.yaml not found"
+                    "warning": "network/config.yaml not found"
                 })
         else:
             self.warnings.append({
@@ -304,7 +304,7 @@ def validate_yaml_file(file_path: Union[str, Path], file_type: str = "auto") -> 
         file_path = Path(file_path)
         if file_path.name == "labbook.yaml":
             file_type = "labbook"
-        elif file_path.name in ["topology.yaml", "network_config.yaml", "network_config_ordered.yaml"]:
+        elif file_path.name in ["config.yaml", "network_config.yaml", "network_config_ordered.yaml"]:
             file_type = "network"
         elif file_path.name == "playbook.yaml":
             file_type = "playbook"

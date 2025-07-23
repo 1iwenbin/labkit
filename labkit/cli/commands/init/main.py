@@ -19,7 +19,7 @@ def init(
     root.mkdir(parents=True)
     (root / "network" / "mounts").mkdir(parents=True)
     for sub in ["events", "queries", "monitors", "scripts"]:
-        (root / sub).mkdir()
+        (root / sub).mkdir(parents=True)
     # 自动获取项目名
     name = root.name
     author = get_git_author()

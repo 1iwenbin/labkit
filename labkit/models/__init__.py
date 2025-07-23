@@ -24,8 +24,8 @@ from .playbook import (
     RunIf, WaitFor, ConditionType
 )
 from .events import (
-    EventType, NodeExecArgs, NodeCreateArgs, LinkCreateArgs, 
-    LinkProperties, InterfaceCreateArgs, SwitchProperties as EventSwitchProperties
+    NetworkEventType, NodeExecArgs, NodeCreateArgs, LinkCreateArgs, 
+    LinkProperties, InterfaceCreateArgs
 )
 
 __all__ = [
@@ -63,11 +63,10 @@ __all__ = [
     "SwitchProperties",
     
     # Event models
-    "EventType",
+    "NetworkEventType",
     "NodeExecArgs",
     "NodeCreateArgs", 
     "LinkCreateArgs",
     "LinkProperties",
     "InterfaceCreateArgs",
-    "EventSwitchProperties",
 ]

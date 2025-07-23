@@ -34,6 +34,7 @@ class InterfaceMode(str, Enum):
     SWITCHED = "switched"  # Switched mode: connected through a switch
     GATEWAY = "gateway"    # Gateway mode: acts as a gateway interface
     HOST = "host"          # Host mode: connected to host network
+    
 
 
 class VolumeMount(BaseLabbookModel):
@@ -44,6 +45,7 @@ class VolumeMount(BaseLabbookModel):
     mode: str = Field(..., alias="mode", description="Mount mode (rw, ro, etc.)")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "host_path": "/tmp/data",
@@ -51,6 +53,13 @@ class VolumeMount(BaseLabbookModel):
                 "mode": "rw"
             }
         }
+    
+    @classmethod
+    def template(cls, host_path: str, container_path: str, mode: str) -> "VolumeMount":
+        """
+        Generate a template VolumeMount data structure with example fields.
+        """
+        return cls(host_path=host_path, container_path=container_path, mode=mode)
 
 
 class Interface(BaseLabbookModel):
@@ -62,7 +71,9 @@ class Interface(BaseLabbookModel):
     mac: Optional[str] = Field(None, alias="mac", description="MAC address")
     vlan: Optional[int] = Field(None, alias="vlan", description="VLAN ID, non-zero means external interface")
 
+        
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "name": "eth0",
@@ -72,6 +83,13 @@ class Interface(BaseLabbookModel):
                 "vlan": 0
             }
         }
+    
+    @classmethod
+    def template(cls, name: str, mode: InterfaceMode, ip_list: Optional[List[str]] = None, mac: Optional[str] = None, vlan: Optional[int] = None) -> "Interface":
+        """
+        Generate a template Interface data structure with example fields.
+        """
+        return cls(name=name, mode=mode, ip_list=ip_list, mac=mac, vlan=vlan)
 
 
 class Node(BaseLabbookModel):
@@ -84,6 +102,7 @@ class Node(BaseLabbookModel):
     ext: Optional[Dict[str, Any]] = Field(None, alias="ext", description="Extension config")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "name": "client-1",
@@ -104,6 +123,19 @@ class Node(BaseLabbookModel):
                 ]
             }
         }
+    
+    def get_image_str(self) -> str:
+        """
+        获取 node 的 image 字符串
+        """
+        return f"{self.image}"
+    
+    @classmethod
+    def template(cls, name: str, image: str, interfaces: List[Interface], volumes: Optional[List[VolumeMount]] = None, ext: Optional[Dict[str, Any]] = None) -> "Node":
+        """
+        Generate a template Node data structure with example fields.
+        """
+        return cls(name=name, image=image, interfaces=interfaces, volumes=volumes, ext=ext)
 
 
 class SwitchProperties(BaseLabbookModel):
@@ -112,14 +144,22 @@ class SwitchProperties(BaseLabbookModel):
     static_neigh: Optional[bool] = Field(False, alias="static_neigh", description="Use static neighbor table (true means L2 domain can have multiple links)")
     no_arp: Optional[bool] = Field(False, alias="no_arp", description="Disable ARP (true means can use eBPF N x N network)")
 
+
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "static_neigh": False,
                 "no_arp": False
             }
         }
-
+    
+    @classmethod
+    def template(cls, static_neigh: Optional[bool] = False, no_arp: Optional[bool] = False) -> "SwitchProperties":
+        """
+        Generate a template SwitchProperties data structure with example fields.
+        """
+        return cls(static_neigh=static_neigh, no_arp=no_arp)
 
 class L2Switch(BaseLabbookModel):
     """L2 switch configuration"""
@@ -127,7 +167,9 @@ class L2Switch(BaseLabbookModel):
     id: str = Field(..., alias="id", description="Switch ID")
     properties: Optional[SwitchProperties] = Field(None, alias="properties", description="Switch properties")
 
+        
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "id": "switch-1",
@@ -137,6 +179,13 @@ class L2Switch(BaseLabbookModel):
                 }
             }
         }
+    
+    @classmethod
+    def template(cls, id: str, properties: Optional[SwitchProperties] = None) -> "L2Switch":
+        """
+        Generate a template L2Switch data structure with example fields.
+        """
+        return cls(id=id, properties=properties)
 
 
 class Link(BaseLabbookModel):
@@ -144,9 +193,12 @@ class Link(BaseLabbookModel):
     
     id: str = Field(..., alias="id", description="Link ID")
     endpoints: List[str] = Field(..., alias="endpoints", description="Endpoint list (format: node:interface)")
-    switch: Optional[str] = Field(None, alias="switch", description="Switch ID")
+    switch: Optional[str] = Field(None, alias="switch", description="Switch ID, if not specified, the link is a point-to-point link")
 
+
+        
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "id": "link-1",
@@ -154,6 +206,13 @@ class Link(BaseLabbookModel):
                 "switch": "switch-1"
             }
         }
+    
+    @classmethod
+    def template(cls, id: str, endpoints: List[str], switch: Optional[str] = None) -> "Link":
+        """
+        Generate a template Link data structure with example fields.
+        """
+        return cls(id=id, endpoints=endpoints, switch=switch)
 
 
 class ImageType(str, Enum):
@@ -166,7 +225,7 @@ class ImageType(str, Enum):
 class Image(BaseLabbookModel):
     """Image configuration"""
     
-    type: ImageType = Field(..., alias="type", description="Image type")
+    type_: ImageType = Field(..., alias="type", description="Image type")
     repo: str = Field(..., alias="repo", description="Repository")
     tag: str = Field(..., alias="tag", description="Tag")
     url: Optional[str] = Field(None, alias="url", description="URL")
@@ -174,7 +233,10 @@ class Image(BaseLabbookModel):
     password: Optional[str] = Field(None, alias="password", description="Password")
     archive_path: Optional[str] = Field(None, alias="archive_path", description="Archive path")
 
+
+
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "type": "registry",
@@ -183,6 +245,13 @@ class Image(BaseLabbookModel):
                 "url": "docker.io"
             }
         }
+    
+    @classmethod
+    def template(cls, type_: ImageType, repo: str, tag: str, url: Optional[str] = None, username: Optional[str] = None, password: Optional[str] = None, archive_path: Optional[str] = None) -> "Image":
+        """
+        Generate a template Image data structure with example fields.
+        """
+        return cls(type_=type_, repo=repo, tag=tag, url=url, username=username, password=password, archive_path=archive_path)
 
 
 class NetworkConfig(BaseLabbookModel):
@@ -193,7 +262,9 @@ class NetworkConfig(BaseLabbookModel):
     switches: Optional[List[L2Switch]] = Field(None, alias="switches", description="Switch list")
     links: Optional[List[Link]] = Field(None, alias="links", description="Link list")
 
+        
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "images": [
@@ -234,6 +305,17 @@ class NetworkConfig(BaseLabbookModel):
                 ]
             }
         }
+    
+    @classmethod
+    def template(cls, images: Optional[List[Image]] = None, nodes: Optional[List[Node]] = None, switches: Optional[List[L2Switch]] = None, links: Optional[List[Link]] = None) -> "NetworkConfig":
+        """
+        Generate a template NetworkConfig data structure with example fields.
+        """
+        return cls(
+            images=images,
+            nodes=nodes,
+            switches=switches,
+            links=links)
 
 
 

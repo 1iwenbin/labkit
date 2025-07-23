@@ -21,7 +21,7 @@ from typing import List, Optional, Dict, Any
 from enum import Enum
 from pydantic import Field, validator, model_validator
 from .base import BaseLabbookModel
-
+from .action import Action
 
 class ConditionType(str, Enum):
     """Condition types for reusable condition definitions"""
@@ -53,24 +53,6 @@ class Condition(BaseLabbookModel):
         }
 
 
-class Action(BaseLabbookModel):
-    """
-    Action definition referencing capability files
-    
-    Actions point to capability definition files in events/, queries/, or monitors/
-    directories that contain the actual execution logic.
-    """
-    
-    source: str = Field(..., description="Path to capability definition file (e.g., 'events/start_traffic.yaml')")
-    parameters: Optional[Dict[str, Any]] = Field(None, description="Optional parameters to override capability defaults")
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "source": "events/start_background_traffic.yaml",
-                "parameters": {"duration": "30s", "rate": "1000pps"}
-            }
-        }
 
 
 class RunIf(BaseLabbookModel):
@@ -153,6 +135,13 @@ class TimelineItem(BaseLabbookModel):
                 "action": {"source": "events/start_background_traffic.yaml"}
             }
         }
+    
+    @classmethod
+    def template(cls, at: int, description: str, action: Action) -> "TimelineItem":
+        """
+        Generate a template TimelineItem data structure with example fields.
+        """
+        return cls(at=at, description=description, action=action)
 
 
 class Procedure(BaseLabbookModel):
@@ -261,3 +250,24 @@ class Playbook(BaseLabbookModel):
                 }
             }
         }
+
+    """
+    Playbook related methods
+    """
+    def add_timeline_item(self, timeline_item: TimelineItem):
+        """
+        Add a timeline item to the playbook
+        """
+        if self.timeline is None:
+            self.timeline = []
+        self.timeline.append(timeline_item)
+    
+    @classmethod
+    def template(cls, timeline: Optional[List[TimelineItem]] = None, conditions: Optional[Dict[str, Condition]] = None, procedures: Optional[Dict[str, Procedure]] = None) -> "Playbook":
+        """
+        Generate a template Playbook data structure with example fields.
+        """
+        return cls(
+            timeline=timeline,
+            conditions=conditions,
+            procedures=procedures)

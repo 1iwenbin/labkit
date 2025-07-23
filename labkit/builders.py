@@ -335,9 +335,9 @@ def save_experiment(labbook: Labbook, output_dir: str = ".") -> Path:
     
     # 保存网络配置
     network_dir = output_path / "network"
-    network_dir.mkdir(exist_ok=True)
+    network_dir.mkdir(parents=True, exist_ok=True)
     
-    topology_file = network_dir / "topology.yaml"
+    topology_file = network_dir / "config.yaml"
     with open(topology_file, "w") as f:
         yaml.dump(labbook.network.model_dump(by_alias=True), f, default_flow_style=False)
     

@@ -160,8 +160,7 @@ class NetworkVisualizer:
         
         # 更新布局
         fig.update_layout(
-            title="Interactive Network Topology",
-            titlefont_size=16,
+            title={"text": "Interactive Network Topology", "font": {"size": 16}},
             showlegend=False,
             hovermode='closest',
             margin=dict(b=20, l=5, r=5, t=40),

@@ -64,6 +64,13 @@ class NodeExecArgs(BaseLabbookModel):
         }
 
 
+    @classmethod
+    def template(cls, key: Optional[str] = None, shellcodes: Optional[List[str]] = None, daemon: Optional[bool] = False, output: Optional[str] = None, timeout: Optional[int] = 0) -> "NodeExecArgs":
+        """
+        Generate a template NodeExecArgs data structure with example fields.
+        """
+        return cls(key=key, shellcodes=shellcodes, daemon=daemon, output=output, timeout=timeout)
+
 class NodeCreateArgs(BaseLabbookModel):
     """Node creation arguments for network-node-create events"""
     
@@ -88,6 +95,13 @@ class NodeCreateArgs(BaseLabbookModel):
             }
         }
 
+    @classmethod
+    def template(cls, node: Node, mount_path: Optional[str] = None) -> "NodeCreateArgs":
+        """
+        Generate a template NodeCreateArgs data structure with example fields.
+        """
+        return cls(node=node, mount_path=mount_path)
+
 
 class LinkProperties(BaseLabbookModel):
     """Link properties for network-link-attr-set events"""
@@ -106,6 +120,13 @@ class LinkProperties(BaseLabbookModel):
                 "delay": "10ms"
             }
         }
+    
+    @classmethod
+    def template(cls, mode: LinkPropertiesMode, bandwidth: Optional[str] = None, loss: Optional[str] = None, delay: Optional[str] = None) -> "LinkProperties":
+        """
+        Generate a template LinkProperties data structure with example fields.
+        """
+        return cls(mode=mode, bandwidth=bandwidth, loss=loss, delay=delay)
 
 
 class LinkCreateArgs(BaseLabbookModel):
@@ -127,6 +148,13 @@ class LinkCreateArgs(BaseLabbookModel):
                 "no_arp": False
             }
         }
+    
+    @classmethod
+    def template(cls, id: str, endpoints: Optional[List[str]] = None, l2_switch_id: Optional[str] = None, static_neigh: Optional[bool] = False, no_arp: Optional[bool] = False) -> "LinkCreateArgs":
+        """
+        Generate a template LinkCreateArgs data structure with example fields.
+        """
+        return cls(id=id, endpoints=endpoints, l2_switch_id=l2_switch_id, static_neigh=static_neigh, no_arp=no_arp)
 
 
 class InterfaceCreateArgs(BaseLabbookModel):
@@ -148,6 +176,13 @@ class InterfaceCreateArgs(BaseLabbookModel):
                 "vlan": 0
             }
         }
+    
+    @classmethod
+    def template(cls, name: str, mode: InterfaceMode, ip: Optional[List[str]] = None, mac: Optional[str] = None, vlan: Optional[int] = None) -> "InterfaceCreateArgs":
+        """
+        Generate a template InterfaceCreateArgs data structure with example fields.
+        """
+        return cls(name=name, mode=mode, ip=ip, mac=mac, vlan=vlan)
 
 
 class NetworkEvent(BaseLabbookModel):
@@ -158,7 +193,7 @@ class NetworkEvent(BaseLabbookModel):
     associated arguments. The specific arguments are populated based on the event type.
     """
     
-    type: NetworkEventType = Field(..., alias="type", description="Event type")
+    type_: NetworkEventType = Field(..., alias="type", description="Event type")
     node_name: Optional[str] = Field(None, alias="node_name", description="Node name (for network-node, netfunc-node events)")
     interface_name: Optional[str] = Field(None, alias="intf_name", description="Interface name (for network-interface events)")
     link_id: Optional[str] = Field(None, alias="link_id", description="Link ID (for network-link events)")
@@ -168,6 +203,7 @@ class NetworkEvent(BaseLabbookModel):
     interface_create_args: Optional[InterfaceCreateArgs] = Field(None, alias="interface_create", description="Interface creation arguments")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "type": "network-node-create",
@@ -188,6 +224,13 @@ class NetworkEvent(BaseLabbookModel):
                 }
             }
         }
+    
+    @classmethod
+    def template(cls, type_: NetworkEventType, node_name: Optional[str] = None, interface_name: Optional[str] = None, link_id: Optional[str] = None, node_create_args: Optional[NodeCreateArgs] = None, link_create_args: Optional[LinkCreateArgs] = None, link_properties: Optional[LinkProperties] = None, interface_create_args: Optional[InterfaceCreateArgs] = None) -> "NetworkEvent":
+        """
+        Generate a template NetworkEvent data structure with example fields.
+        """
+        return cls(type_=type_, node_name=node_name, interface_name=interface_name, link_id=link_id, node_create_args=node_create_args, link_create_args=link_create_args, link_properties=link_properties, interface_create_args=interface_create_args)
 
 
 class NetFuncEvent(BaseLabbookModel):
@@ -197,6 +240,7 @@ class NetFuncEvent(BaseLabbookModel):
     exec_args: NodeExecArgs = Field(..., alias="exec_args", description="Execution arguments")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "node_name": "client-1",
@@ -208,6 +252,13 @@ class NetFuncEvent(BaseLabbookModel):
                 }
             }
         }
+    
+    @classmethod
+    def template(cls, node_name: str, exec_args: NodeExecArgs) -> "NetFuncEvent":
+        """
+        Generate a template NetFuncEvent data structure with example fields.
+        """
+        return cls(node_name=node_name, exec_args=exec_args)
 
 
 class NetFuncExecOutputEvent(BaseLabbookModel):
@@ -217,6 +268,7 @@ class NetFuncExecOutputEvent(BaseLabbookModel):
     exec_args: NodeExecArgs = Field(..., alias="exec_args", description="Execution arguments")
 
     class Config:
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "node_name": "client-1",
@@ -229,3 +281,14 @@ class NetFuncExecOutputEvent(BaseLabbookModel):
                 }
             }
         } 
+    
+    @classmethod
+    def template(cls, node_name: str, exec_args: NodeExecArgs) -> "NetFuncExecOutputEvent":
+        """
+        Generate a template NetFuncExecOutputEvent data structure with example fields.
+        """
+        return cls(node_name=node_name, exec_args=exec_args)
+    
+    
+
+    
