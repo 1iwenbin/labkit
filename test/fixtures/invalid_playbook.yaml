@@ -1,7 +1,0 @@
-
-procedures:
-  - id: test-procedure
-    trigger_at: "invalid_time"  # Invalid time format
-    steps:
-      - description: Test step
-        # Missing required action

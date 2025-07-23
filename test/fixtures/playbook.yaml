@@ -1,8 +1,0 @@
-
-procedures:
-  - id: test-procedure
-    trigger_at: "10s"
-    steps:
-      - description: Test step
-        action:
-          source: test.yaml

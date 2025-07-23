@@ -1,3 +1,6 @@
 pydantic>=2.0.0
 pydantic-yaml>=1.6.0a1
 typing-extensions>=4.0.0 
+typer[all]
+rich
+prompt_toolkit

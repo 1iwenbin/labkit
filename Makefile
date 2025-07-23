@@ -18,7 +18,7 @@ help:
 	@echo "  make help        - 显示此帮助信息"
 
 # 虚拟环境配置
-VENV_NAME = venv
+VENV_NAME = .venv
 VENV_PATH = $(VENV_NAME)/bin/activate
 PYTHON = python3
 PIP = . $(VENV_PATH) && pip

@@ -1,4 +1,0 @@
-
-name: test-experiment
-# Missing required fields: description, network, playbook
-version: "1.0"
