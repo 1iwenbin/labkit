@@ -1,6 +1,42 @@
+# Labkit 依赖（包含主依赖、开发依赖、Jupyter 依赖）
+
+# 主依赖
 pydantic>=2.0.0
 pydantic-yaml>=1.6.0a1
-typing-extensions>=4.0.0 
+typing-extensions>=4.0.0
 typer[all]
 rich
 prompt_toolkit
+
+# 开发依赖包
+# 代码检查和格式化
+flake8>=6.0.0
+black>=23.0.0
+isort>=5.12.0
+
+# 测试工具
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# 类型检查
+mypy>=1.0.0
+
+# 文档生成
+sphinx>=6.0.0
+sphinx-rtd-theme>=1.2.0
+
+# Jupyter 相关依赖
+jupyter>=1.0.0
+notebook>=6.0.0
+ipykernel>=6.0.0
+matplotlib>=3.0.0
+pandas>=1.0.0
+seaborn>=0.11.0
+
+# 网络和可视化相关
+networkx>=2.5
+plotly>=5.0.0
+
+# 开发工具
+ipywidgets>=7.0.0
+tqdm>=4.60.0
