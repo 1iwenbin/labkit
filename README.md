@@ -26,14 +26,22 @@ README.md             # 项目说明
 
 ---
 
-## 安装依赖
+## 快速开始
 
-建议使用 Python 虚拟环境：
+建议使用 Python 虚拟环境，并通过 pyproject.toml 安装本地包：
 
 ```bash
+# 1. 创建虚拟环境（推荐 .venv 目录）
 python3 -m venv .venv
+
+# 2. 激活虚拟环境
 source .venv/bin/activate
-pip install -r requirements.txt
+
+# 3. 使用 pip 安装本地包及依赖（推荐使用 PEP 517/518 标准的 pyproject.toml）
+pip install -e .
+
+# 如需开发/测试/文档等全部依赖：
+pip install -e .[dev,jupyter]
 ```
 
 ---

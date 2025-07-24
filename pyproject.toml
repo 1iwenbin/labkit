@@ -1,0 +1,124 @@
+# 构建系统配置，指定使用 setuptools 和 wheel
+[build-system]
+requires = [ "setuptools>=61.0", "wheel",]  # 构建项目所需的依赖
+build-backend = "setuptools.build_meta"      # 构建后端
+
+# 项目信息
+[project]
+name = "labkit"                              # 项目名称
+version = "0.1.0"                            # 版本号
+description = "Python SDK for Labbook Experiments"  # 简要描述
+readme = "README.md"                         # 项目说明文件
+keywords = [ "network", "experiment", "labbook", "sdk",]  # 关键词
+classifiers = [                               # PyPI 分类标签
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"                     # Python 版本要求
+dependencies = [                              # 项目运行时依赖
+  "pydantic>=2.0.0",
+  "pydantic-yaml>=1.6.0a1",
+  "typing-extensions>=4.0.0",
+  "typer[all]",
+  "rich",
+  "prompt_toolkit",
+]
+[[project.authors]]
+name = "Labkit Team"                          # 作者信息
+email = "team@labkit.org"
+
+[[project.maintainers]]
+name = "Labkit Team"                          # 维护者信息
+email = "team@labkit.org"
+
+[project.license]
+text = "MIT"                                  # 许可证类型
+
+[project.optional-dependencies]
+dev = [                                       # 开发环境依赖
+  "flake8>=6.0.0",
+  "black>=23.0.0",
+  "isort>=5.12.0",
+  "pytest>=7.0.0",
+  "pytest-cov>=4.0.0",
+  "mypy>=1.0.0",
+  "sphinx>=6.0.0",
+  "sphinx-rtd-theme>=1.2.0",
+]
+jupyter = [                                   # Jupyter 相关依赖
+  "jupyter>=1.0.0",
+  "notebook>=6.0.0",
+  "ipykernel>=6.0.0",
+  "matplotlib>=3.0.0",
+  "pandas>=1.0.0",
+  "seaborn>=0.11.0",
+  "networkx>=2.5",
+  "plotly>=5.0.0",
+  "ipywidgets>=7.0.0",
+  "tqdm>=4.60.0",
+]
+
+[project.scripts]
+labkit = "labkit.cli.main:app"                # 命令行入口
+
+[project.urls]
+Homepage = "https://github.com/labkit/labkit"         # 主页
+Documentation = "https://labkit.readthedocs.io/"      # 文档
+Repository = "https://github.com/labkit/labkit"       # 代码仓库
+"Bug Tracker" = "https://github.com/labkit/labkit/issues"  # 问题反馈
+
+# black 代码格式化工具配置
+[tool.black]
+line-length = 88                              # 最大行长度
+target-version = [ "py38",]                  # 目标 Python 版本
+include = "\\.pyi?$"                         # 包含的文件类型
+extend-exclude = "/(\n  # directories\n  \\.eggs\n  | \\.git\n  | \\.hg\n  | \\.mypy_cache\n  | \\.tox\n  | \\.venv\n  | build\n  | dist\n)/\n"  # 排除目录
+
+# isort 导入排序工具配置
+[tool.isort]
+profile = "black"                            # 使用 black 风格
+multi_line_output = 3
+line_length = 88
+
+# mypy 类型检查工具配置
+[tool.mypy]
+python_version = "3.8"                       # Python 版本
+warn_return_any = true                        # 返回 any 类型时警告
+warn_unused_configs = true                    # 未使用配置警告
+disallow_untyped_defs = true                  # 禁止无类型注解的函数
+disallow_incomplete_defs = true               # 禁止不完整类型注解
+disallow_untyped_decorators = true            # 禁止无类型注解的装饰器
+no_implicit_optional = true                   # 禁止隐式 Optional
+warn_redundant_casts = true                   # 冗余类型转换警告
+warn_unused_ignores = true                    # 未使用的 ignore 警告
+warn_no_return = true                         # 缺少 return 警告
+warn_unreachable = true                       # 不可达代码警告
+strict_equality = true                        # 严格相等性检查
+
+# setuptools 包含的额外数据文件
+[tool.setuptools.package-data]
+labkit = [ "*.yaml", "*.yml", "*.json",]      # 包含的文件类型
+
+# pytest 测试工具配置
+[tool.pytest.ini_options]
+testpaths = [ "tests",]                       # 测试目录
+python_files = [ "test_*.py", "*_test.py",]   # 测试文件命名规则
+python_classes = [ "Test*",]                  # 测试类命名规则
+python_functions = [ "test_*",]               # 测试函数命名规则
+addopts = [ "--strict-markers", "--strict-config", "--cov=labkit", "--cov-report=term-missing", "--cov-report=html",]  # 其他参数
+
+# setuptools 自动发现包配置
+[tool.setuptools.packages.find]
+where = [ ".",]                               # 搜索路径
+include = [ "labkit*",]                      # 包含的包名模式
