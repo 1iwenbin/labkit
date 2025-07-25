@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Web Terminal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+  <style>
+    body { margin: 0; background: #222; }
+    #terminal { width: 100vw; height: 100vh; background: #222; }
+  </style>
+</head>
+<body>
+  <div style="padding: 10px; background: #222; color: #fff;">
+    <input id="ws-url" type="text" value="ws://localhost:3000/terminal" style="width: 350px;" />
+    <button id="connect-btn">连接</button>
+    <button id="disconnect-btn" disabled>断开</button>
+  </div>
+  <div id="terminal"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+  <script>
+    let socket = null;
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 16,
+      fontFamily: 'monospace',
+      theme: { background: '#222', foreground: '#fff' }
+    });
+    term.open(document.getElementById('terminal'));
+
+    const wsUrlInput = document.getElementById('ws-url');
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const statusBar = document.getElementById('status-bar');
+
+    function setStatus(msg) {
+      statusBar.textContent = msg;
+    }
+
+    function setConnected(connected) {
+      wsUrlInput.disabled = connected;
+      connectBtn.disabled = connected;
+      disconnectBtn.disabled = !connected;
+    }
+
+    function connect() {
+      const url = wsUrlInput.value;
+      socket = new WebSocket(url);
+
+      socket.onopen = () => {
+        setStatus('已连接到 ' + wsUrlInput.value);
+        setConnected(true);
+        setTimeout(() => term.focus(), 100); // 延迟聚焦
+      };
+      socket.onmessage = (event) => {
+        if (event.data instanceof Blob) {
+          event.data.text().then(text => {
+            term.write(text);
+          });
+        } else {
+          term.write(event.data);
+        }
+      };
+      socket.onclose = () => {
+        setStatus('连接已关闭');
+        setConnected(false);
+      };
+      socket.onerror = (err) => {
+        setStatus('连接出错');
+      };
+    }
+
+    function disconnect() {
+      if (socket) {
+        socket.close();
+        socket = null;
+      }
+    }
+
+    connectBtn.onclick = connect;
+    disconnectBtn.onclick = disconnect;
+
+    term.onData(data => {
+      if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(data);
+      }
+    });
+
+    // 可选：按回车自动连接
+    wsUrlInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !connectBtn.disabled) {
+        connect();
+      }
+    });
+  </script>
+</body>
+</html> 
