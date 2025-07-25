@@ -107,3 +107,18 @@ def generate_ospf6d_config(interfaces, router_id, bfd_profile="bfdd", log_file="
     config_lines.append("!")
     config_lines.append("这是 ospf6d 的配置")  # 额外说明，可根据需要移除
     return "\n".join(config_lines)
+
+    # 示例用例（仅供参考，已注释）
+    # interfaces = ["eth0", "eth1"]
+    # router_id = "192.0.2.1"
+    # bfd_profile = "bfdd"
+    # log_file = "/var/log/frr/ospf6d.log"
+    # log_precision = 6
+    # config = generate_ospf6d_config(
+    #     interfaces=interfaces,
+    #     router_id=router_id,
+    #     bfd_profile=bfd_profile,
+    #     log_file=log_file,
+    #     log_precision=log_precision
+    # )
+    # print(config)
