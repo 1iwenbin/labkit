@@ -10,12 +10,14 @@ class Ospf6InterfaceConfig:
         area (str): OSPF6 区域，默认为 "0.0.0.0"
         bfd (bool): 是否启用 BFD，默认为 False
         bfd_profile (str): BFD profile 名称，默认为 "bfdd"
+        hello_interval (int): Hello 间隔时间（秒），默认为 10
     """
-    def __init__(self, interface: str, area: str = "0.0.0.0", bfd: bool = False, bfd_profile: str = "bfdd"):
+    def __init__(self, interface: str, area: str = "0.0.0.0", bfd: bool = False, bfd_profile: str = "bfdd", hello_interval: int = 10):
         self.interface = interface
         self.area = area
         self.bfd = bfd
         self.bfd_profile = bfd_profile
+        self.hello_interval = hello_interval
 
     def to_config(self) -> str:
         """
@@ -26,7 +28,8 @@ class Ospf6InterfaceConfig:
         """
         lines = [
             f"interface {self.interface}",
-            f"    ipv6 ospf6 area {self.area}"
+            f"    ipv6 ospf6 area {self.area}",
+            f"    ipv6 ospf6 hello-interval {self.hello_interval}"
         ]
         if self.bfd:
             # 启用 BFD
@@ -80,7 +83,7 @@ class Ospf6RouterConfig:
         return "\n".join(lines)
 
 
-def generate_ospf6d_config(interfaces, router_id, bfd_profile="bfdd", log_file="/var/log/frr/ospf6d.log", log_precision=6):
+def generate_ospf6d_config(interfaces, router_id, bfd_profile="bfdd", log_file="/var/log/frr/ospf6d.log", log_precision=6, hello_interval=5):
     """
     生成 ospf6d.conf 配置内容
 
@@ -90,6 +93,7 @@ def generate_ospf6d_config(interfaces, router_id, bfd_profile="bfdd", log_file="
         bfd_profile (str): BFD profile 名称，默认为 "bfdd"
         log_file (str): 日志文件路径
         log_precision (int): 日志时间戳精度
+        hello_interval (int): Hello 间隔时间（秒），默认为 5
 
     Returns:
         str: 完整的 ospf6d.conf 配置内容
@@ -97,7 +101,7 @@ def generate_ospf6d_config(interfaces, router_id, bfd_profile="bfdd", log_file="
     config_lines = []
     for iface in interfaces:
         # 为每个接口生成 OSPF6 配置
-        iface_cfg = Ospf6InterfaceConfig(interface=iface, bfd_profile=bfd_profile)
+        iface_cfg = Ospf6InterfaceConfig(interface=iface, bfd_profile=bfd_profile, hello_interval=hello_interval)
         config_lines.append("!")
         config_lines.append(iface_cfg.to_config())
     config_lines.append("!")

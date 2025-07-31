@@ -34,9 +34,6 @@ class Builder:
     Builder is the main controller class that coordinates the construction of Labbook, Network, and Playbook.
     """
 
-    labbook_builder: "LabbookBuilder" = None
-    network_builder: "NetworkBuilder" = None
-    playbook_builder: "PlaybookBuilder" = None
 
     def __init__(self, output_dir: str = ".") -> None:
         """
@@ -351,8 +348,6 @@ class Builder:
 # =========================
 class LabbookBuilder:
     # 模板数据
-    # labbook.yaml
-    labbook: Labbook = None
     
     """
     LabbookBuilder 用于一键生成 labbook 目录结构和基本文件。
@@ -362,6 +357,7 @@ class LabbookBuilder:
         初始化 LabbookBuilder
         """
         self.output_dir = Path(output_dir)
+        self.labbook: Labbook = None
 
     # ===== Labbook 相关方法 =====
     def set_labbook(self, labbook: Labbook):
@@ -402,12 +398,7 @@ class NetworkBuilder:
     """
     网络配置构建器，负责 network/ 目录及其内容的生成
     """
-    node_map: Dict[str, Node] = {}
-    switch_map: Dict[str, L2Switch] = {}
-    link_map: Dict[str, Link] = {}
-    image_repo_map: Dict[str, Image] = {}
-    endpoint_map: Dict[str, bool] = {}
-    mounts_host_path_list: List[str] = []
+    # 这些应该是实例变量，不是类变量，定义在 __init__ 里即可，不需要在类体里声明
     
     def __init__(self, output_dir: str = "."):
         """
@@ -559,14 +550,14 @@ class PlaybookBuilder:
     """
     流程编排构建器，负责 actions/ 目录和 playbook.yaml 的生成
     """
-    timeline: List[TimelineItem] = []
-    actions: Dict[str, Action] = {}
-    events: Dict[str, NetworkEvent] = {}
     
     def __init__(self, output_dir: str = "."):
         """
         初始化 PlaybookBuilder
         """
+        self.timeline: List[TimelineItem] = []
+        self.actions: Dict[str, Action] = {}
+        self.events: Dict[str, NetworkEvent] = {}
         self.output_dir = Path(output_dir)
         self._build_actions()
     
