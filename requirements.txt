@@ -37,6 +37,9 @@ seaborn>=0.11.0
 networkx>=2.5
 plotly>=5.0.0
 
+# 远程管理
+fabric>=3.0.0
+
 # 开发工具
 ipywidgets>=7.0.0
 tqdm>=4.60.0
