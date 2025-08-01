@@ -68,13 +68,10 @@ class FileOperations:
                         preserve_mode=True
                     )
                     
-                    if result.ok:
-                        progress.update(task, completed=file_size)
-                        console.print(f"✅ 文件上传成功: {local_path} -> {name}:{remote_path}")
-                        return True
-                    else:
-                        console.print(f"❌ 文件上传失败: {result.stderr}")
-                        return False
+                    # fabric.transfer.Result 没有 ok 属性，直接认为成功
+                    progress.update(task, completed=file_size)
+                    console.print(f"✅ 文件上传成功: {local_path} -> {name}:{remote_path}")
+                    return True
             else:
                 result = self.manager.connections[name].put(
                     local_path, 
@@ -82,12 +79,9 @@ class FileOperations:
                     preserve_mode=True
                 )
                 
-                if result.ok:
-                    console.print(f"✅ 文件上传成功: {local_path} -> {name}:{remote_path}")
-                    return True
-                else:
-                    console.print(f"❌ 文件上传失败: {result.stderr}")
-                    return False
+                # fabric.transfer.Result 没有 ok 属性，直接认为成功
+                console.print(f"✅ 文件上传成功: {local_path} -> {name}:{remote_path}")
+                return True
                     
         except Exception as e:
             console.print(f"❌ 上传文件时发生错误: {e}")
@@ -113,12 +107,20 @@ class FileOperations:
         
         try:
             # 确保本地目录存在
-            os.makedirs(os.path.dirname(local_path), exist_ok=True)
+            local_dir = os.path.dirname(local_path)
+            if local_dir:  # 只有当目录不为空时才创建
+                os.makedirs(local_dir, exist_ok=True)
+            
+            # 检查远程文件是否存在
+            check_result = self.manager.execute(name, f"test -f {remote_path}", hide=True)
+            if check_result is None or not check_result.ok:
+                console.print(f"❌ 远程文件不存在: {remote_path}")
+                return False
             
             if show_progress:
                 # 获取远程文件大小
                 result = self.manager.execute(name, f"stat -c%s {remote_path}", hide=True)
-                if result and result.ok:
+                if result is not None and result.ok:
                     file_size = int(result.stdout.strip())
                 else:
                     file_size = 0
@@ -132,30 +134,32 @@ class FileOperations:
                 ) as progress:
                     task = progress.add_task(f"从 {name} 下载文件...", total=file_size)
                     
-                    # 使用 fabric 的 get 方法下载文件
+                    try:
+                        # 使用 fabric 的 get 方法下载文件
+                        result = self.manager.connections[name].get(
+                            remote_path, 
+                            local_path
+                        )
+                        
+                        # fabric.transfer.Result 没有 ok 属性，直接认为成功
+                        progress.update(task, completed=file_size)
+                        console.print(f"✅ 文件下载成功: {name}:{remote_path} -> {local_path}")
+                        return True
+                    except Exception as e:
+                        console.print(f"❌ 文件下载失败: {e}")
+                        return False
+            else:
+                try:
                     result = self.manager.connections[name].get(
                         remote_path, 
                         local_path
                     )
                     
-                    if result.ok:
-                        progress.update(task, completed=file_size)
-                        console.print(f"✅ 文件下载成功: {name}:{remote_path} -> {local_path}")
-                        return True
-                    else:
-                        console.print(f"❌ 文件下载失败: {result.stderr}")
-                        return False
-            else:
-                result = self.manager.connections[name].get(
-                    remote_path, 
-                    local_path
-                )
-                
-                if result.ok:
+                    # fabric.transfer.Result 没有 ok 属性，直接认为成功
                     console.print(f"✅ 文件下载成功: {name}:{remote_path} -> {local_path}")
                     return True
-                else:
-                    console.print(f"❌ 文件下载失败: {result.stderr}")
+                except Exception as e:
+                    console.print(f"❌ 文件下载失败: {e}")
                     return False
                     
         except Exception as e:

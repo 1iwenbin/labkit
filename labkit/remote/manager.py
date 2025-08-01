@@ -286,88 +286,9 @@ class RemoteManager:
                 console.print(f"❌ 流式执行失败: {e}")
             return False
     
-    def start_interactive_shell(self, name: str) -> bool:
-        """
-        启动交互式 shell 会话
-        
-        Args:
-            name: 服务器名称
-            
-        Returns:
-            bool: 是否启动成功
-        """
-        if name not in self.manager.servers:
-            if self.enable_ui:
-                console.print(f"❌ 服务器 {name} 不存在")
-            return False
-        
-        try:
-            success = self.manager.interactive_shell(name)
-            if not success and self.enable_ui:
-                console.print(f"❌ 启动交互式会话失败")
-            return success
-        except Exception as e:
-            if self.enable_ui:
-                console.print(f"❌ 启动交互式会话失败: {e}")
-            return False
+
     
-    def batch_execute(self, command: str, servers: Optional[List[str]] = None) -> Dict[str, Any]:
-        """
-        批量执行命令
-        
-        Args:
-            command: 要执行的命令
-            servers: 服务器列表，如果为None则使用所有服务器
-            
-        Returns:
-            Dict[str, Any]: 各服务器的执行结果
-        """
-        if not servers:
-            servers = list(self.manager.servers.keys())
-        
-        if not servers:
-            if self.enable_ui:
-                console.print("❌ 没有可用的服务器")
-            return {}
-        
-        if self.enable_ui:
-            console.print(f"🔄 在 {len(servers)} 个服务器上执行命令: {command}")
-        
-        results = {}
-        for server in servers:
-            try:
-                # 确保服务器已连接
-                if server not in self.manager.connections:
-                    if not self.connect_server(server):
-                        if self.enable_ui:
-                            console.print(f"❌ 无法连接到 {server}")
-                        continue
-                
-                # 执行命令
-                result = self.manager.execute(server, command)
-                if result:
-                    results[server] = {
-                        'stdout': result.stdout,
-                        'stderr': result.stderr,
-                        'return_code': result.return_code,
-                        'success': result.ok
-                    }
-                    
-                    if self.enable_ui:
-                        if result.ok:
-                            console.print(f"✅ {server}: {result.stdout.strip()}")
-                        else:
-                            console.print(f"❌ {server}: {result.stderr.strip()}")
-                else:
-                    results[server] = {'success': False, 'error': '执行失败'}
-                    if self.enable_ui:
-                        console.print(f"❌ {server}: 执行失败")
-            except Exception as e:
-                results[server] = {'success': False, 'error': str(e)}
-                if self.enable_ui:
-                    console.print(f"❌ {server}: {e}")
-        
-        return results
+
     
     # ==================== 系统信息方法 ====================
     
@@ -394,16 +315,48 @@ class RemoteManager:
             info = self.commands.get_system_info(name)
             
             if self.enable_ui:
-                table = Table(title=f"{name} 系统信息")
-                table.add_column("项目", style="cyan")
-                table.add_column("信息", style="green")
+                console.print(f"\n📊 {name} 系统信息")
+                console.print("=" * 60)
                 
-                for key, value in info.items():
-                    # 限制显示长度
-                    display_value = value[:100] + "..." if len(value) > 100 else value
-                    table.add_row(key.upper(), display_value)
+                # 操作系统信息
+                if 'os' in info:
+                    os_info = info['os']
+                    console.print(f"🖥️  操作系统: {os_info.get('system', 'N/A')} {os_info.get('kernel', 'N/A')} ({os_info.get('architecture', 'N/A')})")
                 
-                console.print(table)
+                # CPU信息
+                if 'cpu' in info:
+                    cpu_info = info['cpu']
+                    console.print(f"🔧 CPU: {cpu_info.get('Model name', 'N/A')}")
+                    console.print(f"   核心数: {cpu_info.get('CPU(s)', 'N/A')} | 架构: {cpu_info.get('Architecture', 'N/A')}")
+                
+                # 内存信息
+                if 'memory' in info:
+                    mem_info = info['memory']
+                    console.print(f"💾 内存: {mem_info.get('total', 'N/A')} | 已用: {mem_info.get('used', 'N/A')} | 可用: {mem_info.get('available', 'N/A')}")
+                
+                # 负载信息
+                if 'load' in info:
+                    load_info = info['load']
+                    console.print(f"📈 负载: 1分钟 {load_info.get('1min', 'N/A')} | 5分钟 {load_info.get('5min', 'N/A')} | 15分钟 {load_info.get('15min', 'N/A')}")
+                
+                # 磁盘信息
+                if 'disk' in info:
+                    console.print(f"💿 磁盘:")
+                    for disk in info['disk'][:3]:  # 只显示前3个磁盘
+                        console.print(f"   {disk['device']} ({disk['filesystem']}) {disk['size']} 已用{disk['use_percent']} 挂载{disk['mount_point']}")
+                
+                # 网络信息
+                if 'network' in info:
+                    console.print(f"🌐 网络:")
+                    for net in info['network']:
+                        if net['state'] == 'UP':
+                            console.print(f"   {net['interface']}: {net['address']}")
+                
+                # 系统时间
+                if 'datetime' in info:
+                    console.print(f"🕐 时间: {info['datetime']}")
+                
+                console.print("=" * 60)
             
             return info
         except Exception as e:
@@ -411,90 +364,11 @@ class RemoteManager:
                 console.print(f"❌ 获取系统信息失败: {e}")
             return None
     
-    def get_process_info(self, name: str, pattern: str = "") -> Optional[str]:
-        """
-        获取进程信息
-        
-        Args:
-            name: 服务器名称
-            pattern: 进程名称模式
-            
-        Returns:
-            Optional[str]: 进程信息
-        """
-        if name not in self.manager.servers:
-            if self.enable_ui:
-                console.print(f"❌ 服务器 {name} 不存在")
-            return None
-        
-        if name not in self.manager.connections:
-            if not self.connect_server(name):
-                return None
-        
-        try:
-            result = self.commands.get_process_info(name, pattern)
-            
-            if self.enable_ui:
-                console.print(f"进程信息:\n{result}")
-            
-            return result
-        except Exception as e:
-            if self.enable_ui:
-                console.print(f"❌ 获取进程信息失败: {e}")
-            return None
+
     
-    # ==================== 服务管理方法 ====================
+
     
-    def manage_service(self, name: str, service: str, action: str) -> Optional[bool]:
-        """
-        管理服务
-        
-        Args:
-            name: 服务器名称
-            service: 服务名称
-            action: 操作 (start/stop/restart/status)
-            
-        Returns:
-            Optional[bool]: 操作是否成功
-        """
-        if name not in self.manager.servers:
-            if self.enable_ui:
-                console.print(f"❌ 服务器 {name} 不存在")
-            return None
-        
-        if name not in self.manager.connections:
-            if not self.connect_server(name):
-                return None
-        
-        try:
-            if action == "status":
-                status = self.commands.check_service_status(name, service)
-                if self.enable_ui:
-                    console.print(f"🔍 {service} 服务状态: {status}")
-                return True
-            elif action == "start":
-                success = self.commands.start_service(name, service)
-                if self.enable_ui:
-                    console.print(f"{'✅' if success else '❌'} 启动 {service} 服务")
-                return success
-            elif action == "stop":
-                success = self.commands.stop_service(name, service)
-                if self.enable_ui:
-                    console.print(f"{'✅' if success else '❌'} 停止 {service} 服务")
-                return success
-            elif action == "restart":
-                success = self.commands.restart_service(name, service)
-                if self.enable_ui:
-                    console.print(f"{'✅' if success else '❌'} 重启 {service} 服务")
-                return success
-            else:
-                if self.enable_ui:
-                    console.print(f"❌ 不支持的操作: {action}")
-                return None
-        except Exception as e:
-            if self.enable_ui:
-                console.print(f"❌ 服务操作失败: {e}")
-            return None
+
     
     # ==================== 文件操作方法 ====================
     
@@ -580,41 +454,173 @@ class RemoteManager:
                 console.print(f"❌ 文件下载失败: {e}")
             return False
     
-    # ==================== 监控方法 ====================
-    
-    def monitor_servers(self, servers: Optional[List[str]] = None) -> bool:
+    def download_directory(self, name: str, remote_dir: str, local_dir: str) -> bool:
         """
-        监控服务器
+        下载目录
         
         Args:
-            servers: 服务器列表，如果为None则监控所有服务器
+            name: 服务器名称
+            remote_dir: 远程目录路径
+            local_dir: 本地目录路径
             
         Returns:
-            bool: 是否启动监控成功
+            bool: 是否下载成功
         """
-        if not servers:
-            servers = list(self.manager.servers.keys())
-        
-        if not servers:
+        if name not in self.manager.servers:
             if self.enable_ui:
-                console.print("❌ 没有可用的服务器")
+                console.print(f"❌ 服务器 {name} 不存在")
             return False
         
-        if self.enable_ui:
-            console.print(f"🔍 开始监控 {len(servers)} 个服务器...")
-            console.print("按 Ctrl+C 停止监控")
+        if name not in self.manager.connections:
+            if not self.connect_server(name):
+                return False
         
         try:
-            self.monitor.start_monitoring(servers)
-            return True
-        except KeyboardInterrupt:
             if self.enable_ui:
-                console.print("\n⏹️  监控已停止")
-            return True
+                with console.status(f"正在从 {name} 下载目录..."):
+                    success = self.file_ops.download_directory(name, remote_dir, local_dir)
+            else:
+                success = self.file_ops.download_directory(name, remote_dir, local_dir)
+            
+            if success:
+                if self.enable_ui:
+                    console.print(f"✅ 目录下载成功: {remote_dir} -> {local_dir}")
+                return True
+            else:
+                if self.enable_ui:
+                    console.print(f"❌ 目录下载失败")
+                return False
         except Exception as e:
             if self.enable_ui:
-                console.print(f"❌ 监控失败: {e}")
+                console.print(f"❌ 目录下载失败: {e}")
             return False
+    
+    def upload_directory(self, name: str, local_dir: str, remote_dir: str) -> bool:
+        """
+        上传目录到远程服务器
+        
+        Args:
+            name: 服务器名称
+            local_dir: 本地目录路径
+            remote_dir: 远程目录路径
+            
+        Returns:
+            bool: 是否上传成功
+        """
+        if name not in self.manager.servers:
+            if self.enable_ui:
+                console.print(f"❌ 服务器 {name} 不存在")
+            return False
+        
+        if name not in self.manager.connections:
+            if not self.connect_server(name):
+                return False
+        
+        try:
+            if self.enable_ui:
+                with console.status(f"正在上传目录到 {name}..."):
+                    success = self.file_ops.upload_directory(name, local_dir, remote_dir)
+            else:
+                success = self.file_ops.upload_directory(name, local_dir, remote_dir)
+            
+            if success:
+                if self.enable_ui:
+                    console.print(f"✅ 目录上传成功: {local_dir} -> {remote_dir}")
+                return True
+            else:
+                if self.enable_ui:
+                    console.print(f"❌ 目录上传失败")
+                return False
+        except Exception as e:
+            if self.enable_ui:
+                console.print(f"❌ 目录上传失败: {e}")
+            return False
+    
+    def sync_directory(self, name: str, remote_dir: str, local_dir: str) -> bool:
+        """
+        同步目录（从远程下载到本地）
+        
+        Args:
+            name: 服务器名称
+            remote_dir: 远程目录路径
+            local_dir: 本地目录路径
+            
+        Returns:
+            bool: 是否同步成功
+        """
+        if name not in self.manager.servers:
+            if self.enable_ui:
+                console.print(f"❌ 服务器 {name} 不存在")
+            return False
+        
+        if name not in self.manager.connections:
+            if not self.connect_server(name):
+                return False
+        
+        try:
+            if self.enable_ui:
+                with console.status(f"正在从 {name} 同步目录..."):
+                    success = self.file_ops.download_directory(name, remote_dir, local_dir)
+            else:
+                success = self.file_ops.download_directory(name, remote_dir, local_dir)
+            
+            if success:
+                if self.enable_ui:
+                    console.print(f"✅ 目录同步成功: {remote_dir} -> {local_dir}")
+                return True
+            else:
+                if self.enable_ui:
+                    console.print(f"❌ 目录同步失败")
+                return False
+        except Exception as e:
+            if self.enable_ui:
+                console.print(f"❌ 目录同步失败: {e}")
+            return False
+    
+    def upload_directory(self, name: str, local_dir: str, remote_dir: str) -> bool:
+        """
+        上传目录到远程服务器
+        
+        Args:
+            name: 服务器名称
+            local_dir: 本地目录路径
+            remote_dir: 远程目录路径
+            
+        Returns:
+            bool: 是否上传成功
+        """
+        if name not in self.manager.servers:
+            if self.enable_ui:
+                console.print(f"❌ 服务器 {name} 不存在")
+            return False
+        
+        if name not in self.manager.connections:
+            if not self.connect_server(name):
+                return False
+        
+        try:
+            if self.enable_ui:
+                with console.status(f"正在上传目录到 {name}..."):
+                    success = self.file_ops.upload_directory(name, local_dir, remote_dir)
+            else:
+                success = self.file_ops.upload_directory(name, local_dir, remote_dir)
+            
+            if success:
+                if self.enable_ui:
+                    console.print(f"✅ 目录上传成功: {local_dir} -> {remote_dir}")
+                return True
+            else:
+                if self.enable_ui:
+                    console.print(f"❌ 目录上传失败")
+                return False
+        except Exception as e:
+            if self.enable_ui:
+                console.print(f"❌ 目录上传失败: {e}")
+            return False
+    
+
+    
+
     
     # ==================== UI 相关方法 ====================
     
@@ -650,24 +656,17 @@ class RemoteManager:
 命令执行:
   exec <name> <command>  - 在指定服务器执行命令
   stream <name> <command> - 流式执行命令（实时输出）
-  shell <name>           - 启动交互式 shell 会话
-  batch <command>        - 在所有服务器执行命令
   info <name>           - 获取服务器系统信息
-  ps <name> [pattern]   - 查看进程信息
 
-服务管理:
-  service <name> <service> <action> - 管理服务 (start/stop/restart/status)
-  install <name> <package> - 安装软件包
-  update <name>         - 更新系统
+
 
 文件操作:
   upload <name> <local> <remote> - 上传文件
   download <name> <remote> <local> - 下载文件
-  sync <name> <local_dir> <remote_dir> - 同步目录
+  sync <name> <remote_dir> <local_dir> - 同步目录（从远程下载到本地）
+  push <name> <local_dir> <remote_dir> - 推送目录（从本地上传到远程）
 
-监控功能:
-  monitor [servers]      - 实时监控服务器
-  status [servers]       - 检查服务器状态
+
 
 交互功能:
   help                   - 显示此帮助信息
@@ -685,11 +684,8 @@ class RemoteManager:
   connect web-server
   exec web-server "uname -a"
   stream web-server "tail -f /var/log/syslog"
-  shell web-server
-  batch "echo 'Hello from $(hostname)'"
-  service web-server nginx status
-  upload web-server config.conf /etc/nginx/
-  monitor web-server,db-server
+  sync web-server /remote/dir/ /local/dir/
+  push web-server /local/dir/ /remote/dir/
 
 提示: 使用 Tab 键可以自动补全命令和服务器名称
         """
@@ -864,24 +860,22 @@ class RemoteManager:
                     self.execute_command(args[0], ' '.join(args[1:]))
                 elif cmd == 'stream' and len(args) >= 2:
                     self.execute_stream_command(args[0], ' '.join(args[1:]))
-                elif cmd == 'shell' and len(args) >= 1:
-                    self.start_interactive_shell(args[0])
-                elif cmd == 'batch' and len(args) >= 1:
-                    self.batch_execute(' '.join(args))
                 elif cmd == 'info' and len(args) >= 1:
                     self.get_system_info(args[0])
-                elif cmd == 'ps' and len(args) >= 1:
-                    pattern = args[1] if len(args) > 1 else ""
-                    self.get_process_info(args[0], pattern)
-                elif cmd == 'service' and len(args) >= 3:
-                    self.manage_service(args[0], args[1], args[2])
                 elif cmd == 'upload' and len(args) >= 3:
                     self.upload_file(args[0], args[1], args[2])
                 elif cmd == 'download' and len(args) >= 3:
                     self.download_file(args[0], args[1], args[2])
-                elif cmd == 'monitor':
-                    servers = args[0].split(',') if args else None
-                    self.monitor_servers(servers)
+                elif cmd == 'sync' and len(args) >= 3:
+                    # 从远程同步到本地
+                    remote_dir = args[1].rstrip('/')
+                    local_dir = args[2].rstrip('/')
+                    self.sync_directory(args[0], remote_dir, local_dir)
+                elif cmd == 'push' and len(args) >= 3:
+                    # 从本地上传到远程
+                    local_dir = args[1].rstrip('/')
+                    remote_dir = args[2].rstrip('/')
+                    self.upload_directory(args[0], local_dir, remote_dir)
                 elif cmd == 'remove' and len(args) >= 1:
                     if Confirm.ask(f"确定要删除服务器 {args[0]} 吗?"):
                         self.remove_server(args[0])
@@ -960,28 +954,12 @@ def main():
     stream_parser.add_argument('server', help='服务器名称')
     stream_parser.add_argument('cmd', help='要执行的命令')
     
-    # 交互式 shell
-    shell_parser = subparsers.add_parser('shell', help='启动交互式 shell 会话')
-    shell_parser.add_argument('server', help='服务器名称')
-    
-    # 批量执行命令
-    batch_parser = subparsers.add_parser('batch', help='批量执行命令')
-    batch_parser.add_argument('cmd', help='要执行的命令')
-    batch_parser.add_argument('--servers', help='服务器列表 (逗号分隔)')
-    
     # 获取系统信息
     info_parser = subparsers.add_parser('info', help='获取系统信息')
     info_parser.add_argument('server', help='服务器名称')
     
-    # 监控服务器
-    monitor_parser = subparsers.add_parser('monitor', help='监控服务器')
-    monitor_parser.add_argument('--servers', help='服务器列表 (逗号分隔)')
-    
-    # 服务管理
-    service_parser = subparsers.add_parser('service', help='管理服务')
-    service_parser.add_argument('server', help='服务器名称')
-    service_parser.add_argument('service', help='服务名称')
-    service_parser.add_argument('action', choices=['start', 'stop', 'restart', 'status'], help='操作')
+
+
     
     # 文件操作
     upload_parser = subparsers.add_parser('upload', help='上传文件')
@@ -1021,18 +999,8 @@ def main():
             manager.execute_command(args.server, args.cmd)
         elif args.command == 'stream':
             manager.execute_stream_command(args.server, args.cmd)
-        elif args.command == 'shell':
-            manager.start_interactive_shell(args.server)
-        elif args.command == 'batch':
-            servers = args.servers.split(',') if args.servers else None
-            manager.batch_execute(args.cmd, servers)
         elif args.command == 'info':
             manager.get_system_info(args.server)
-        elif args.command == 'monitor':
-            servers = args.servers.split(',') if args.servers else None
-            manager.monitor_servers(servers)
-        elif args.command == 'service':
-            manager.manage_service(args.server, args.service, args.action)
         elif args.command == 'upload':
             manager.upload_file(args.server, args.local, args.remote)
         elif args.command == 'download':

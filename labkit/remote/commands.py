@@ -27,7 +27,7 @@ class RemoteCommands:
         """
         self.manager = manager
     
-    def get_system_info(self, name: str) -> Dict[str, str]:
+    def get_system_info(self, name: str) -> Dict[str, Any]:
         """
         获取系统信息
         
@@ -40,29 +40,94 @@ class RemoteCommands:
         info = {}
         
         # 获取操作系统信息
-        result = self.manager.execute(name, "uname -a", hide=True)
+        result = self.manager.execute(name, "uname -s -r -m", hide=True)
         if result and result.ok:
-            info['os'] = result.stdout.strip()
+            parts = result.stdout.strip().split()
+            if len(parts) >= 3:
+                info['os'] = {
+                    'system': parts[0],
+                    'kernel': parts[1], 
+                    'architecture': parts[2]
+                }
         
         # 获取内存信息
         result = self.manager.execute(name, "free -h", hide=True)
         if result and result.ok:
-            info['memory'] = result.stdout.strip()
+            lines = result.stdout.strip().split('\n')
+            if len(lines) >= 2:
+                mem_line = lines[1].split()
+                if len(mem_line) >= 7:
+                    info['memory'] = {
+                        'total': mem_line[1],
+                        'used': mem_line[2],
+                        'free': mem_line[3],
+                        'shared': mem_line[4],
+                        'buff_cache': mem_line[5],
+                        'available': mem_line[6]
+                    }
         
         # 获取磁盘信息
-        result = self.manager.execute(name, "df -h", hide=True)
+        result = self.manager.execute(name, "df -h --output=source,fstype,size,used,avail,pcent,target", hide=True)
         if result and result.ok:
-            info['disk'] = result.stdout.strip()
+            lines = result.stdout.strip().split('\n')[1:]  # 跳过标题行
+            disk_info = []
+            for line in lines:
+                parts = line.split()
+                if len(parts) >= 7:
+                    disk_info.append({
+                        'device': parts[0],
+                        'filesystem': parts[1],
+                        'size': parts[2],
+                        'used': parts[3],
+                        'available': parts[4],
+                        'use_percent': parts[5],
+                        'mount_point': parts[6]
+                    })
+            info['disk'] = disk_info
         
         # 获取CPU信息
-        result = self.manager.execute(name, "lscpu | grep 'Model name'", hide=True)
+        result = self.manager.execute(name, "lscpu", hide=True)
         if result and result.ok:
-            info['cpu'] = result.stdout.strip()
+            cpu_info = {}
+            for line in result.stdout.strip().split('\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    cpu_info[key.strip()] = value.strip()
+            info['cpu'] = cpu_info
         
         # 获取负载信息
         result = self.manager.execute(name, "uptime", hide=True)
         if result and result.ok:
-            info['load'] = result.stdout.strip()
+            uptime_line = result.stdout.strip()
+            # 解析 uptime 输出
+            import re
+            load_match = re.search(r'load average: ([\d.]+), ([\d.]+), ([\d.]+)', uptime_line)
+            if load_match:
+                info['load'] = {
+                    '1min': load_match.group(1),
+                    '5min': load_match.group(2),
+                    '15min': load_match.group(3)
+                }
+        
+        # 获取网络信息
+        result = self.manager.execute(name, "ip -br addr show", hide=True)
+        if result and result.ok:
+            network_info = []
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        network_info.append({
+                            'interface': parts[0],
+                            'state': parts[1],
+                            'address': parts[2] if len(parts) > 2 else 'N/A'
+                        })
+            info['network'] = network_info
+        
+        # 获取系统时间
+        result = self.manager.execute(name, "date", hide=True)
+        if result and result.ok:
+            info['datetime'] = result.stdout.strip()
         
         return info
     
