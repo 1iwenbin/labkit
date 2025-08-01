@@ -43,7 +43,7 @@ class SystemMonitor:
         初始化系统监控器
         
         Args:
-            manager: RemoteManager 实例
+            manager: ConnectionManager 实例
         """
         self.manager = manager
         self.metrics_history: Dict[str, List[SystemMetrics]] = {}

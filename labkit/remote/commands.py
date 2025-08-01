@@ -23,7 +23,7 @@ class RemoteCommands:
         初始化命令执行器
         
         Args:
-            manager: RemoteManager 实例
+            manager: ConnectionManager 实例
         """
         self.manager = manager
     

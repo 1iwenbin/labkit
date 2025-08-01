@@ -23,7 +23,7 @@ class FileOperations:
         初始化文件操作器
         
         Args:
-            manager: RemoteManager 实例
+            manager: ConnectionManager 实例
         """
         self.manager = manager
     

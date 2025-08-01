@@ -9,14 +9,16 @@ Labkit 远程管理模块
 - 批量操作
 """
 
-from .manager import RemoteManager
+from .connection import ConnectionManager
 from .commands import RemoteCommands
 from .file_ops import FileOperations
 from .monitoring import SystemMonitor
+from .remote import RemoteManager
 
 __all__ = [
-    "RemoteManager",
+    "ConnectionManager",
     "RemoteCommands", 
     "FileOperations",
-    "SystemMonitor"
+    "SystemMonitor",
+    "RemoteManager"
 ]
