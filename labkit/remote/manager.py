@@ -17,15 +17,11 @@ import json
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
 
-# 添加 labkit 到 Python 路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'labkit'))
 
-try:
-    from labkit.remote import RemoteManager as ConnectionManager, RemoteCommands, FileOperations, SystemMonitor
-except ImportError as e:
-    print(f"❌ 无法导入 labkit.remote 模块: {e}")
-    print("请确保 labkit 库已正确安装")
-    sys.exit(1)
+from .connection import ConnectionManager
+from .commands import RemoteCommands
+from .file_ops import FileOperations
+from .monitoring import SystemMonitor
 
 from rich.console import Console
 from rich.table import Table

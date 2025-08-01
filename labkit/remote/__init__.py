@@ -13,7 +13,7 @@ from .connection import ConnectionManager
 from .commands import RemoteCommands
 from .file_ops import FileOperations
 from .monitoring import SystemMonitor
-from .remote import RemoteManager
+from .manager import RemoteManager
 
 __all__ = [
     "ConnectionManager",
