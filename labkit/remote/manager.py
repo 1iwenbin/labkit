@@ -35,14 +35,15 @@ console = Console()
 class RemoteManager:
     """远程管理器主类 - 规范化版本"""
     
-    def __init__(self, enable_ui: bool = True):
+    def __init__(self, config_file: Optional[str] = None, enable_ui: bool = True):
         """
         初始化远程管理器
         
         Args:
+            config_file: 服务器配置文件路径
             enable_ui: 是否启用UI输出，如果为False则只返回数据不显示界面
         """
-        self.manager = ConnectionManager()
+        self.manager = ConnectionManager(config_file=config_file)
         self.commands = RemoteCommands(self.manager)
         self.file_ops = FileOperations(self.manager)
         self.monitor = SystemMonitor(self.manager)
