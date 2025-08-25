@@ -654,7 +654,7 @@ class SATuSGHLabGen:
         # 创建链路属性事件
         events = []
         for i, link in enumerate(all_links):
-            link_id = link.get('id', f'link{i}')
+            link_id = link.id if hasattr(link, 'id') else f'link{i}'
             link_properties = self.builder.new_link_properties(mode="up", delay="0ms")
             link_attr_set_event = self.builder.new_network_link_attr_set_event(id=link_id, link_properties=link_properties)
             events.append(link_attr_set_event)

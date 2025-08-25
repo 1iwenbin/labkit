@@ -6,6 +6,8 @@ This module defines the event models for Labbook experiment execution:
 - NetworkEvent: Unified network event structure
 - NetFuncEvent: Network function execution event
 - NetFuncExecOutputEvent: Network function execution output event
+- VolFetchEvent: Volume fetch event
+- VolFetchEntry: Volume fetch entry
 - NodeExecArgs: Node execution arguments
 - NodeCreateArgs: Node creation arguments
 - LinkProperties: Link properties with mode enumeration
@@ -34,6 +36,8 @@ class NetworkEventType(str, Enum):
     NETWORK_NODE_DESTROY = "network-node-destroy"      # Network node destruction event
     NETWORK_INTERFACE_CREATE = "network-interface-create"  # Network interface creation event
     NETWORK_INTERFACE_DESTROY = "network-interface-destroy"  # Network interface destruction event
+
+
 
 
 class LinkPropertiesMode(str, Enum):
@@ -288,6 +292,60 @@ class NetFuncExecOutputEvent(BaseLabbookModel):
         Generate a template NetFuncExecOutputEvent data structure with example fields.
         """
         return cls(node_name=node_name, exec_args=exec_args)
+    
+    
+
+class VolFetchEntry(BaseLabbookModel):
+    """Volume fetch entry for volume fetch events"""
+    
+    node_name: str = Field(..., alias="node_name", description="Node name")
+    volumes: List[str] = Field(..., alias="volumes", description="Volume name list")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "node_name": "client-1",
+                "volumes": ["volume1", "volume2", "volume3"]
+            }
+        }
+    
+    @classmethod
+    def template(cls, node_name: str, volumes: List[str]) -> "VolFetchEntry":
+        """
+        Generate a template VolFetchEntry data structure with example fields.
+        """
+        return cls(node_name=node_name, volumes=volumes)
+
+
+class VolFetchEvent(BaseLabbookModel):
+    """Volume fetch event for volume fetch operations"""
+    
+    saved_name: str = Field(..., alias="saved_name", description="Saved name")
+    volume_fetch_entries: List[VolFetchEntry] = Field(..., alias="volume_fetch_entries", description="Volume fetch list")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "saved_name": "experiment-backup-001",
+                "volume_fetch_entries": [
+                    {
+                        "node_name": "client-1",
+                        "volumes": ["volume1", "volume2"]
+                    },
+                    {
+                        "node_name": "server-1",
+                        "volumes": ["volume3"]
+                    }
+                ]
+            }
+        }
+    
+    @classmethod
+    def template(cls, saved_name: str, volume_fetch_entries: List[VolFetchEntry]) -> "VolFetchEvent":
+        """
+        Generate a template VolFetchEvent data structure with example fields.
+        """
+        return cls(saved_name=saved_name, volume_fetch_entries=volume_fetch_entries)
     
     
 

@@ -7,6 +7,7 @@ class ActionType(str, Enum):
     NETWORK_EVENTS = "network-events"
     NETFUNC_EVENTS = "netfunc-events"
     NETFUNC_EXEC_OUTPUT = "netfunc-exec-output"
+    VOL_FETCH = "vol-fetch"
 
 class Action(BaseLabbookModel):
     """
