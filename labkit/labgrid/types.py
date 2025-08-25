@@ -60,10 +60,10 @@ class ExperimentConfig:
     """实验配置数据类"""
     experiment_type: str           # 实验类型标识
     output_dir: str               # 输出目录
-    parameters: Dict[str, Any] = field(default_factory=dict) # 实验参数
     timeout: int = 3600           # 超时时间（秒）
     retry_count: int = 0          # 重试次数
     priority: int = 0             # 优先级（数字越大优先级越高）
+    parameters: Dict[str, Any] = field(default_factory=dict) # 实验参数
     dependencies: List[str] = field(default_factory=list) # 依赖的实验ID
     tags: List[str] = field(default_factory=list) # 标签
     description: Optional[str] = None # 实验描述
@@ -74,10 +74,10 @@ class ExperimentResult:
     """实验结果数据类"""
     experiment_id: str            # 实验ID
     status: ExperimentStatus      # 实验状态
+    output_dir: str               # 输出目录
     start_time: Optional[datetime] = None # 开始时间
     end_time: Optional[datetime] = None   # 结束时间
     duration: Optional[float] = None      # 执行时长（秒）
-    output_dir: str               # 输出目录
     result_files: List[str] = field(default_factory=list) # 结果文件列表
     metrics: Dict[str, Any] = field(default_factory=dict) # 性能指标
     error_message: Optional[str] = None  # 错误信息
@@ -89,9 +89,9 @@ class TaskInfo:
     """任务信息数据类"""
     task_id: str                  # 任务ID
     experiment_id: str            # 关联的实验ID
-    server_name: Optional[str] = None # 分配的服务器名称
     status: TaskStatus            # 任务状态
     created_time: datetime        # 创建时间
+    server_name: Optional[str] = None # 分配的服务器名称
     start_time: Optional[datetime] = None # 开始时间
     end_time: Optional[datetime] = None   # 结束时间
     progress: float = 0.0         # 进度（0.0-1.0）

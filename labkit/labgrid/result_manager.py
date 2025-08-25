@@ -67,6 +67,25 @@ class ResultManager:
                 # 重建结果索引
                 for result_data in metadata.get('results', []):
                     try:
+                        # 确保状态字段是枚举类型
+                        if 'status' in result_data and isinstance(result_data['status'], int):
+                            result_data['status'] = ExperimentStatus(result_data['status'])
+                        
+                        # 确保时间字段是datetime类型
+                        if 'start_time' in result_data and result_data['start_time']:
+                            try:
+                                if isinstance(result_data['start_time'], str):
+                                    result_data['start_time'] = datetime.fromisoformat(result_data['start_time'])
+                            except:
+                                result_data['start_time'] = None
+                        
+                        if 'end_time' in result_data and result_data['end_time']:
+                            try:
+                                if isinstance(result_data['end_time'], str):
+                                    result_data['end_time'] = datetime.fromisoformat(result_data['end_time'])
+                            except:
+                                result_data['end_time'] = None
+                        
                         result = ExperimentResult(**result_data)
                         self.result_index[result.experiment_id] = result
                     except Exception as e:
@@ -91,8 +110,8 @@ class ResultManager:
                 result_dict = {
                     'experiment_id': result.experiment_id,
                     'status': result.status.value,  # 枚举值
-                    'start_time': result.start_time.isoformat() if result.start_time else None,
-                    'end_time': result.end_time.isoformat() if result.end_time else None,
+                    'start_time': result.start_time.isoformat() if result.start_time and hasattr(result.start_time, 'isoformat') else str(result.start_time) if result.start_time else None,
+                    'end_time': result.end_time.isoformat() if result.end_time and hasattr(result.end_time, 'isoformat') else str(result.end_time) if result.end_time else None,
                     'duration': result.duration,
                     'output_dir': result.output_dir,
                     'result_files': result.result_files,

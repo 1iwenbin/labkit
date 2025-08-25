@@ -12,7 +12,7 @@ import threading
 import queue
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .types import (
     TaskInfo, 
@@ -42,7 +42,7 @@ class Task:
     max_retries: int = 0
     priority: int = 0
     dependencies: List[str] = field(default_factory=list)
-    callback: Optional[Callable[[Task], None]] = None
+    callback: Optional[Callable[['Task'], None]] = None
 
 
 class TaskManager:

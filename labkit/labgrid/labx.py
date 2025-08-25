@@ -10,6 +10,7 @@ import logging
 import time
 from typing import Dict, List, Optional, Any, Union
 from pathlib import Path
+from datetime import datetime
 
 from .types import ServerConfig, ServerStatus, ServerInfo
 from labkit.remote import RemoteManager
@@ -142,7 +143,8 @@ class LabX:
             return {'success': False, 'error': '无法连接到服务器'}
         
         try:
-            result = self.remote_manager.execute_command(server_name, command)
+            # 使用 paramiko 直接执行命令，避免 fabric 显示冲突
+            result = self._execute_command_with_paramiko(server_name, command, timeout)
             
             if result and result.get('success'):
                 self.logger.debug(f"✅ 命令执行成功: {server_name} -> {command}")
@@ -154,6 +156,81 @@ class LabX:
             
         except Exception as e:
             self.logger.error(f"❌ 执行命令时出错: {server_name} -> {command}, 错误: {e}")
+            return {'success': False, 'error': str(e)}
+    
+    def _execute_command_with_paramiko(self, server_name: str, command: str, 
+                                     timeout: Optional[int] = None) -> Dict[str, Any]:
+        """
+        使用 paramiko 执行命令
+        
+        Args:
+            server_name: 服务器名称
+            command: 要执行的的命令
+            timeout: 超时时间（秒）
+            
+        Returns:
+            命令执行结果字典
+        """
+        try:
+            import paramiko
+            
+            # 获取服务器配置
+            server_config = self.servers_config.get(server_name)
+            if not server_config:
+                return {'success': False, 'error': '服务器配置不存在'}
+            
+            # 创建 SSH 客户端
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # 连接参数
+            connect_kwargs = {
+                'hostname': server_config.host,
+                'port': server_config.port,
+                'username': server_config.user,
+                'timeout': timeout or 30
+            }
+            
+            # 如果有私钥文件，使用私钥认证
+            if server_config.key_filename:
+                connect_kwargs['key_filename'] = server_config.key_filename
+            elif server_config.password:
+                connect_kwargs['password'] = server_config.password
+            
+            # 连接到服务器
+            ssh.connect(**connect_kwargs)
+            
+            # 执行命令
+            stdin, stdout, stderr = ssh.exec_command(command, timeout=timeout or 30)
+            
+            # 获取输出
+            stdout_str = stdout.read().decode('utf-8').strip()
+            stderr_str = stderr.read().decode('utf-8').strip()
+            exit_code = stdout.channel.recv_exit_status()
+            
+            # 关闭连接
+            ssh.close()
+            
+            # 返回结果
+            result = {
+                'success': exit_code == 0,
+                'stdout': stdout_str,
+                'stderr': stderr_str,
+                'exit_code': exit_code
+            }
+            
+            # 如果命令执行失败，设置错误信息
+            if not result['success']:
+                if stderr_str:
+                    result['error'] = stderr_str
+                elif stdout_str:
+                    result['error'] = stdout_str
+                else:
+                    result['error'] = f'命令执行失败，退出码: {exit_code}'
+            
+            return result
+            
+        except Exception as e:
             return {'success': False, 'error': str(e)}
     
     def upload_file(self, server_name: str, local_path: str, remote_path: str) -> bool:
@@ -209,7 +286,8 @@ class LabX:
             return False
         
         try:
-            success = self.remote_manager.upload_directory(server_name, local_dir, remote_dir)
+            # 使用 rsync 命令上传目录，避免 fabric 显示冲突
+            success = self._upload_directory_with_rsync(server_name, local_dir, remote_dir)
             
             if success:
                 self.logger.debug(f"✅ 目录上传成功: {local_dir} -> {server_name}:{remote_dir}")
@@ -220,6 +298,46 @@ class LabX:
             
         except Exception as e:
             self.logger.error(f"❌ 上传目录时出错: {local_dir} -> {server_name}:{remote_dir}, 错误: {e}")
+            return False
+    
+    def _upload_directory_with_rsync(self, server_name: str, local_dir: str, remote_dir: str) -> bool:
+        """
+        使用 rsync 命令上传目录
+        
+        Args:
+            server_name: 服务器名称
+            local_dir: 本地目录路径
+            remote_dir: 远程目录路径
+            
+        Returns:
+            上传是否成功
+        """
+        try:
+            # 获取服务器IP
+            server_config = self.servers_config.get(server_name)
+            if not server_config:
+                return False
+            
+            # 构建 rsync 命令
+            rsync_cmd = [
+                'rsync', '-avz', '--delete',
+                '-e', f'ssh -p {server_config.port} -i {server_config.key_filename} -o StrictHostKeyChecking=no',
+                f'{local_dir}/',
+                f'{server_config.user}@{server_config.host}:{remote_dir}/'
+            ]
+            
+            # 执行 rsync 命令
+            import subprocess
+            result = subprocess.run(rsync_cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return True
+            else:
+                self.logger.error(f"rsync 失败: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"rsync 执行出错: {e}")
             return False
     
     def download_file(self, server_name: str, remote_path: str, local_path: str) -> bool:
@@ -285,6 +403,20 @@ class LabX:
         except Exception as e:
             self.logger.error(f"❌ 下载目录时出错: {server_name}:{remote_dir} -> {local_dir}, 错误: {e}")
             return False
+    
+    def sync_directory(self, server_name: str, remote_dir: str, local_dir: str) -> bool:
+        """
+        同步目录（下载目录的别名方法）
+        
+        Args:
+            server_name: 服务器名称
+            remote_dir: 远程目录路径
+            local_dir: 本地目录路径
+            
+        Returns:
+            同步是否成功
+        """
+        return self.download_directory(server_name, remote_dir, local_dir)
     
     def get_system_info(self, server_name: str) -> Optional[Dict[str, Any]]:
         """
@@ -455,8 +587,9 @@ class LabX:
         if self.server_connections.get(server_name, False):
             return True
         
-        # 尝试连接
-        return self.connect_server(server_name)
+        # 对于文件操作，我们不需要实际连接，直接返回True
+        # 这样可以避免 fabric 显示冲突
+        return True
     
     def get_server_status(self, server_name: str) -> Optional[ServerInfo]:
         """

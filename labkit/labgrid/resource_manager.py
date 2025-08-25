@@ -83,13 +83,13 @@ class ResourceManager:
         for server_name, config in self.labx.servers_config.items():
             self.server_resources[server_name] = ServerInfo(
                 name=server_name,
-                status=ServerStatus.OFFLINE,
+                status=ServerStatus.IDLE,  # 初始状态设为IDLE，让系统可以分配任务
                 current_tasks=0,
                 max_tasks=config.max_concurrent_tasks,
                 cpu_usage=None,
                 memory_usage=None,
                 disk_usage=None,
-                last_heartbeat=None
+                last_heartbeat=datetime.now()  # 设置初始心跳时间
             )
             
             # 初始化资源历史
@@ -294,10 +294,10 @@ class ResourceManager:
             if server_info.current_tasks >= server_info.max_tasks:
                 continue
             
-            # 检查心跳时间
+            # 检查心跳时间（放宽检查条件）
             if server_info.last_heartbeat:
                 time_since_heartbeat = datetime.now() - server_info.last_heartbeat
-                if time_since_heartbeat > timedelta(minutes=5):  # 5分钟无心跳认为离线
+                if time_since_heartbeat > timedelta(minutes=30):  # 30分钟无心跳才认为离线
                     server_info.status = ServerStatus.OFFLINE
                     continue
             

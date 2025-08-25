@@ -1,0 +1,11 @@
+{
+  "max_worker_threads": 8,
+  "max_workers_per_server": 2,
+  "max_total_workers": 16,
+  "experiment_timeout": 86400,
+  "task_queue_size": 1000,
+  "log_level": "INFO",
+  "log_dir": "logs",
+  "result_retention_days": 30,
+  "enable_monitoring": true
+}
